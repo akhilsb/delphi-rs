@@ -1,6 +1,5 @@
 use std::{collections::HashSet};
 
-use async_recursion::async_recursion;
 use types::appxcon::{Msg, Replica, ProtMsg};
 
 use super::{Context, RoundState};

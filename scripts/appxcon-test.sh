@@ -2,8 +2,8 @@
 
 killall {node} &> /dev/null
 rm -rf /tmp/*.db &> /dev/null
-vals=(531336 498474 527599 507272)
-tri=32862
+vals=(27000 27100 27200 27300)
+tri=1000000
 
 TESTDIR=${TESTDIR:="testdata/hyb_4"}
 TYPE=${TYPE:="release"}
@@ -23,22 +23,24 @@ echo $st_time
     --delta 5000 \
     --val 100 \
     --tri $tri \
-    --syncer $3 \
-    --batch $4 > logs/syncer.log &
+    --syncer $4 \
+    --batch $5 > logs/syncer.log &
 
 for((i=0;i<4;i++)); do
 ./target/$TYPE/node \
     --config $TESTDIR/nodes-$i.json \
     --ip ip_file \
     --sleep $st_time \
-    --epsilon 10 \
-    --delta 10 \
+    --epsilon $1 \
+    --delta $2 \
     --val ${vals[$i]} \
     --tri $tri \
-    --vsstype $2 \
-    --syncer $3 \
-    --batch $4 > logs/$i.log &
+    --vsstype $3 \
+    --syncer $4 \
+    --batch $5 > logs/$i.log &
 done
 
 # Client has finished; Kill the nodes
 killall ./target/$TYPE/appxcox_new &> /dev/null
+
+# Kill all nodes sudo lsof -ti:7000-7015 | xargs kill -9

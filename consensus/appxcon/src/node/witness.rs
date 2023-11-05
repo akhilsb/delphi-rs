@@ -1,10 +1,8 @@
-use types::{appxcon::{Replica, Msg, ProtMsg}, SyncMsg};
+use types::{appxcon::{Replica, Msg, ProtMsg}, SyncMsg, Val};
 
 use crate::node::{RoundState};
 
 use super::Context;
-
-use async_recursion::async_recursion;
 
 impl Context{
     pub async fn handle_witness(&mut self,vec_rbc_indices:Vec<Replica>, round: u64, witness_sender:Replica){
@@ -56,7 +54,7 @@ impl Context{
             }
             else {
                 log::info!("Protocol terminated value {} ",self.value);
-                let cancel_handler = self.sync_send.send(0, SyncMsg{sender:self.myid,state:types::SyncState::COMPLETED,value:self.value}).await;
+                let cancel_handler = self.sync_send.send(0, SyncMsg{sender:self.myid,state:types::SyncState::COMPLETED,value:self.value as Val}).await;
                 self.add_cancel_handler(cancel_handler);
             }
         }

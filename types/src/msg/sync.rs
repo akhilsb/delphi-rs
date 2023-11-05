@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::{WireReady, Replica};
+use crate::{WireReady, Replica, Val};
 
 #[derive(Debug,Serialize,Deserialize,Clone)]
 pub enum SyncState{
@@ -19,7 +19,7 @@ pub enum SyncState{
 pub struct SyncMsg{
     pub sender:Replica,
     pub state:SyncState,
-    pub value: u64
+    pub value: Val
 }
 
 impl WireReady for SyncMsg{

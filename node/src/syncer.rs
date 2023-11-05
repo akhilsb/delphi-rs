@@ -114,7 +114,7 @@ impl Syncer{
                             self.sharing_complete_times.insert(msg.sender, SystemTime::now().duration_since(UNIX_EPOCH)
                             .unwrap()
                             .as_millis());
-                            self.values.insert(msg.sender,msg.value);
+                            self.values.insert(msg.sender,msg.value as u64);
                             if self.sharing_complete_times.len() == (2*self.num_nodes/3)+1{
                                 // All nodes terminated sharing protocol
                                 let mut vec_times = Vec::new();
@@ -153,7 +153,7 @@ impl Syncer{
                             .duration_since(UNIX_EPOCH)
                             .unwrap()
                             .as_millis());
-                            self.values.insert(msg.sender,msg.value);
+                            self.values.insert(msg.sender,msg.value as u64);
                             if self.timings.len() == self.num_nodes{
                                 // All nodes terminated protocol
                                 let mut vec_times = Vec::new();

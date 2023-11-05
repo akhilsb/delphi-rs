@@ -341,6 +341,58 @@ dependencies = [
 ]
 
 [[package]]
+name = "delphi"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "async-trait",
+ "bincode",
+ "bytes",
+ "config",
+ "consensus",
+ "crypto",
+ "fnv",
+ "futures",
+ "futures-util",
+ "log",
+ "network",
+ "nohash-hasher",
+ "priority-queue",
+ "serde",
+ "tokio",
+ "tokio-stream",
+ "tokio-util 0.6.10",
+ "types",
+]
+
+[[package]]
+name = "delphi-rbc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "async-trait",
+ "bincode",
+ "bytes",
+ "config",
+ "consensus",
+ "crypto",
+ "fnv",
+ "futures",
+ "futures-util",
+ "log",
+ "network",
+ "nohash-hasher",
+ "priority-queue",
+ "serde",
+ "tokio",
+ "tokio-stream",
+ "tokio-util 0.6.10",
+ "types",
+]
+
+[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -609,32 +661,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hyb_appxcon"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "async-trait",
- "bincode",
- "bytes",
- "config",
- "consensus",
- "crypto",
- "fnv",
- "futures",
- "futures-util",
- "log",
- "network",
- "nohash-hasher",
- "priority-queue",
- "serde",
- "tokio",
- "tokio-stream",
- "tokio-util 0.6.10",
- "types",
-]
-
-[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -780,9 +806,10 @@ dependencies = [
  "clap",
  "config",
  "consensus",
+ "delphi",
+ "delphi-rbc",
  "fnv",
  "futures",
- "hyb_appxcon",
  "log",
  "network",
  "signal-hook",

@@ -2,7 +2,7 @@ use crypto::hash::{Hash};
 use crypto::hash::{do_mac};
 use merkle_light::proof::Proof;
 use serde::{Serialize, Deserialize};
-use crate::{WireReady};
+use crate::{WireReady, Lev, Point, Val, Round};
 
 use super::Replica;
 
@@ -14,6 +14,16 @@ pub struct Msg {
     pub rnd_estm:bool,
     pub message: Vec<usize>
 }
+
+#[derive(Debug,Serialize,Deserialize,Clone)]
+pub struct DelphiMsg{
+    pub origin: Replica,
+    pub round:Round,
+    // (Level,(Interval,Value))
+    pub vals: Vec<(Lev,Vec<(Point,Point,Val)>)>,
+    pub coalesce: (Val,Lev,Lev,Round)
+}
+
 
 #[derive(Debug,Serialize,Deserialize,Clone)]
 pub struct CTRBCMsg{
@@ -52,8 +62,8 @@ pub enum ProtMsg{
     CTReconstruct(CTRBCMsg,Replica),
     // Echos related to Binary Approximate Agreement
     // (Msg for AA inst, message), sender node, round number
-    BinaryAAEcho(Vec<(Replica,Vec<u8>)>,Replica,u64),
-    BinaryAAEcho2(Vec<(Replica,Vec<u8>)>,Replica,u64),
+    BinaryAAEcho(DelphiMsg,Replica,Round),
+    BinaryAAEcho2(DelphiMsg,Replica,Round),
 }
 
 #[derive(Debug,Serialize,Deserialize,Clone)]

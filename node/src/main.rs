@@ -7,7 +7,8 @@ use config::Node;
 use fnv::FnvHashMap;
 use node::Syncer;
 use signal_hook::{iterator::Signals, consts::{SIGINT, SIGTERM}};
-use std::{net::{SocketAddr, SocketAddrV4}, collections::hash_map::DefaultHasher};
+use types::Val;
+use std::{net::{SocketAddr, SocketAddrV4}};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -21,16 +22,16 @@ async fn main() -> Result<()> {
         .expect("Unable to detect VSS type");
     let sleep = m.value_of("sleep")
         .expect("Unable to detect sleep time").parse::<u128>().unwrap();
-    let batch = m.value_of("batch")
+    let _batch = m.value_of("batch")
         .expect("Unable to parse batch size").parse::<usize>().unwrap();
     let val_appx = m.value_of("val")
-        .expect("Value required").parse::<u64>().unwrap();
+        .expect("Value required").parse::<Val>().unwrap();
     let delta = m.value_of("delta")
-        .expect("Value required").parse::<u64>().unwrap();
+        .expect("Value required").parse::<Val>().unwrap();
     let epsilon = m.value_of("epsilon")
-        .expect("Value required").parse::<u64>().unwrap();
+        .expect("Value required").parse::<Val>().unwrap();
     let tri = m.value_of("tri")
-        .expect("Value required").parse::<u64>().unwrap();
+        .expect("Value required").parse::<Val>().unwrap();
     let syncer_file = m.value_of("syncer")
         .expect("Unable to parse syncer ip file");
     let conf_file = std::path::Path::new(conf_str);
@@ -78,10 +79,13 @@ async fn main() -> Result<()> {
         //     //exit_tx = hash_cc_baa::node::Context::spawn(config,sleep,batch).unwrap();
         // },
         "appx" => {
-            exit_tx = appxcon::node::Context::spawn(config, sleep, val_appx,epsilon).unwrap();
+            exit_tx = appxcon::node::Context::spawn(config, sleep, val_appx as u64,epsilon as u64).unwrap();
         },
-        "hyb" =>{
-            exit_tx = hyb_appxcon::node::Context::spawn(config,sleep,val_appx,delta,epsilon,tri).unwrap();
+        "del" =>{
+            exit_tx = delphi::node::Context::spawn(config,val_appx,epsilon,delta,tri).unwrap();
+        },
+        "delrbc" =>{
+            exit_tx = delphi_rbc::node::Context::spawn(config,val_appx,epsilon,delta,tri).unwrap();
         },
         "sync" => {
             let f_str = syncer_file.to_string();
@@ -97,7 +101,7 @@ async fn main() -> Result<()> {
             exit_tx = Syncer::spawn(net_map, config.client_addr.clone()).unwrap();
         },
         _ =>{
-            log::error!("Matching VSS not provided, canceling execution");
+            log::error!("Matching VSS not provided {}, canceling execution",vss_type);
             return Ok(());
         }
     }

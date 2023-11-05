@@ -1,13 +1,12 @@
 use anyhow::{Result, anyhow};
 use network::{plaintcp::{TcpReceiver, TcpReliableSender, CancelHandler}, Acknowledgement};
 use tokio::sync::{oneshot, mpsc::{unbounded_channel, UnboundedReceiver}};
-use tokio_util::time::DelayQueue;
-use types::{appxcon::{WrapperMsg, Replica, ProtMsg}, SyncMsg, SyncState};
+use types::{appxcon::{WrapperMsg, Replica, ProtMsg}, SyncMsg, SyncState, Val, Lev, Round};
 use config::Node;
 use fnv::FnvHashMap;
 use std::{net::{SocketAddr, SocketAddrV4}, collections::HashMap, time::{SystemTime, UNIX_EPOCH}};
 
-use super::{RoundState, Handler, SyncHandler};
+use super::{Handler, SyncHandler, Level};
 
 pub struct Context {
     /// Networking context
@@ -15,8 +14,7 @@ pub struct Context {
     pub net_recv: UnboundedReceiver<WrapperMsg>,
     pub sync_send:TcpReliableSender<Replica,SyncMsg,Acknowledgement>,
     pub sync_recv: UnboundedReceiver<SyncMsg>,
-    /// Coin invoke
-    pub invoke_coin:DelayQueue<Replica>,
+    
     /// Data context
     pub num_nodes: usize,
     pub myid: usize,
@@ -28,29 +26,33 @@ pub struct Context {
     pub sec_key_map:HashMap<Replica, Vec<u8>>,
 
     /// Round number and Approx Consensus related context
-    pub round:u64,
-    pub value:u64,
-    pub epsilon:u64,
+    pub round:Round,
+    pub value:Val,
+    pub rho:Val,
+    pub epsilon:Val,
+    pub maxrange: Val,
+    pub exponent: Val,
 
+    pub total_rounds_bin:Round,
+    pub total_levels: Lev,
+
+    pub input: Val,
+    pub max_input:Val,
     /// State context
-    pub round_state: HashMap<u64,RoundState>,
-    // Using 
-    // Map<Round,Map<Node,Set<Echos>>>
-    //pub 
-    //pub echos_ss: HashMap<u32,HashMap<Replica,HashSet<Replica>>>,
-    //pub ready_ss: HashMap<u32,HashMap<Replica,HashSet<Replica>>>,
+    pub round_state: HashMap<Lev,Level>,
     /// Exit protocol
     exit_rx: oneshot::Receiver<()>,
     /// Cancel Handlers
-    pub cancel_handlers: HashMap<u64,Vec<CancelHandler<Acknowledgement>>>,
+    pub cancel_handlers: HashMap<Round,Vec<CancelHandler<Acknowledgement>>>,
 }
 
 impl Context {
     pub fn spawn(
         config: Node,
-        sleep:u128,
-        val:u64,
-        epsilon:u64
+        val: Val,
+        epsilon: Val,
+        rho:Val,
+        maxrange: Val
     ) -> anyhow::Result<oneshot::Sender<()>> {
         let prot_payload = &config.prot_payload;
         let v:Vec<&str> = prot_payload.split(',').collect();
@@ -65,13 +67,7 @@ impl Context {
         let my_address = to_socket_address("0.0.0.0", my_port.port());
         let syncer_listen_port = config.client_port;
         let syncer_l_address = to_socket_address("0.0.0.0", syncer_listen_port);
-        // No clients needed
-
-        // let prot_net_rt = tokio::runtime::Builder::new_multi_thread()
-        // .enable_all()
-        // .build()
-        // .unwrap();
-
+        
         // Setup networking
         let (tx_net_to_consensus, rx_net_to_consensus) = unbounded_channel();
         TcpReceiver::<Acknowledgement, WrapperMsg, _>::spawn(
@@ -84,9 +80,9 @@ impl Context {
             syncer_l_address, 
             SyncHandler::new(tx_net_to_client)
         );
-        let _sleep_time = sleep - SystemTime::now().duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
+        // let _sleep_time = sleep - SystemTime::now().duration_since(UNIX_EPOCH)
+        // .unwrap()
+        // .as_millis();
         log::debug!("Consensus addrs {:?}",consensus_addrs);
         let consensus_net = TcpReliableSender::<Replica,WrapperMsg,Acknowledgement>::with_peers(
             consensus_addrs.clone()
@@ -98,7 +94,23 @@ impl Context {
                 let prot_payload = &config.prot_payload;
                 let v:Vec<&str> = prot_payload.split(',').collect();
                 let _init_value:u64 = v[1].parse::<u64>().unwrap();
-                //let epsilon:u64 = v[2].parse::<u64>().unwrap();
+                // delta is the level of allowed overshoot, 
+                // epsilon is the final state of disagreement
+
+                let exponent:Val = 3;
+                let levels = maxrange as f64/rho as f64;
+                let exponent_log = (exponent as f64).log2();
+                let levels = (levels.log2()/exponent_log).ceil() as Lev;
+                let rounds = ((2*maxrange*(config.num_nodes as i64+3)*(levels as i64)) as f64/epsilon as f64).log2();
+                let rounds = (rounds/exponent_log).ceil() as Round;
+                let max_input:Val = exponent.pow(rounds+1);
+
+                let mut levelmap:HashMap<Lev,Level> = HashMap::default();
+                for level in 0..levels{
+                    let sep = rho*(exponent.pow(level));
+                    levelmap.insert(level, Level::new(sep, level, val, config.num_faults+1, config.num_nodes-config.num_faults));
+                }
+                // TODO: Estimate the number of rounds of approximate agreement needed
                 let mut c = Context {
                     net_send: consensus_net,
                     net_recv: rx_net_to_consensus,
@@ -111,11 +123,17 @@ impl Context {
                     payload: config.payload,
                     round:0,
                     value: val,
+                    rho:rho,
                     epsilon: epsilon,
-        
-                    round_state: HashMap::default(),
-                    invoke_coin:tokio_util::time::DelayQueue::new(),
-                    //echos_ss: HashMap::default(),
+                    maxrange:maxrange,
+                    exponent: exponent,
+
+                    total_rounds_bin:rounds,
+                    total_levels: levels,
+                    input: val,
+                    max_input:max_input,
+
+                    round_state: levelmap,
                     exit_rx:exit_rx,
                     cancel_handlers:HashMap::default()
                 };
@@ -127,7 +145,6 @@ impl Context {
                     log::error!("Consensus error: {}", e);
                 }
                 log::debug!("Started n-parallel RBC with value {} and epsilon {}",c.value,c.epsilon);
-                // Initialize storage
             });
             Ok(exit_tx)
         }
@@ -143,8 +160,6 @@ impl Context {
                 let wrapper_msg = WrapperMsg::new(protmsg.clone(), self.myid, &sec_key.as_slice());
                 let cancel_handler:CancelHandler<Acknowledgement> = self.net_send.send(replica, wrapper_msg).await;
                 self.add_cancel_handler(cancel_handler);
-                // let sent_msg = Arc::new(wrapper_msg);
-                // self.c_send(replica, sent_msg).await;
             }
         }
     }
@@ -153,7 +168,7 @@ impl Context {
         // Send the client message that we are alive and kicking
         let cancel_handler = self.sync_send.send(
     0,
-       SyncMsg { sender: self.myid, state: SyncState::ALIVE, value:0}).await;
+       SyncMsg { sender: self.myid, state: SyncState::ALIVE,value:0}).await;
         self.add_cancel_handler(cancel_handler);
         loop {
             tokio::select! {
@@ -182,8 +197,8 @@ impl Context {
                                 .duration_since(UNIX_EPOCH)
                                 .unwrap()
                                 .as_millis());
-                            self.start_rbc().await;
-                            let cancel_handler = self.sync_send.send(0, SyncMsg { sender: self.myid, state: SyncState::STARTED,value:0}).await;
+                            self.start_baa(0 as Round).await;
+                            let cancel_handler = self.sync_send.send(0, SyncMsg { sender: self.myid, state: SyncState::STARTED, value:0}).await;
                             self.add_cancel_handler(cancel_handler);
                         },
                         SyncState::STOP =>{
