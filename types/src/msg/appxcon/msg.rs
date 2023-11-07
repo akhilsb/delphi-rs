@@ -64,6 +64,15 @@ pub enum ProtMsg{
     // (Msg for AA inst, message), sender node, round number
     BinaryAAEcho(DelphiMsg,Replica,Round),
     BinaryAAEcho2(DelphiMsg,Replica,Round),
+
+    // FIN messages
+    FinBinAAEcho(Val,Replica,Round,Round),
+    FinBinAAEcho2(Val,Replica,Round,Round),
+    FinBinAAEcho3(Val,Replica,Round,Round),
+    // Leader election invocation number, index of coin, Signature, Sender replica
+    LeaderCoin(Round,usize,Vec<u8>,Replica),
+    // Leader Round, BBA number, Signature, Sender
+    BBACoin(Round,Round,Vec<u8>,Replica)
 }
 
 #[derive(Debug,Serialize,Deserialize,Clone)]

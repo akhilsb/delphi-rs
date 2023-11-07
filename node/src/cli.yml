@@ -57,3 +57,8 @@ args:
         long: syncer
         help: IPs for the syncer to connect to
         takes_value: true
+    - rand:
+        short: r
+        long: rand
+        help: Seed random string for running protocols
+        takes_value: true

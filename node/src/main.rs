@@ -34,6 +34,8 @@ async fn main() -> Result<()> {
         .expect("Value required").parse::<Val>().unwrap();
     let syncer_file = m.value_of("syncer")
         .expect("Unable to parse syncer ip file");
+    let rand = m.value_of("rand")
+        .expect("Unable to parse random number").parse::<usize>().unwrap();
     let conf_file = std::path::Path::new(conf_str);
     let str = String::from(conf_str);
     let mut config = match conf_file
@@ -86,6 +88,34 @@ async fn main() -> Result<()> {
         },
         "delrbc" =>{
             exit_tx = delphi_rbc::node::Context::spawn(config,val_appx,epsilon,delta,tri).unwrap();
+        },
+        "fin" =>{
+            let rand = rand.to_string();
+            let mut arr_strsplit:Vec<&str> = conf_str.split("/").collect();
+            let id_str = ((config.id +1)).to_string();
+            //let id_str_1  = ((config.id)).to_string();
+            let key_str = "sec".to_string();
+            
+            let concat_str = key_str + &id_str;
+            let _last_elem = arr_strsplit.pop();
+
+            let mut vec_native = Vec::new();
+            for i in 1..config.num_nodes+1{
+                let pkey_str = "pub".to_string();
+                let mut tpub = arr_strsplit.clone();
+                let iter_str = pkey_str.clone()+ &(i.to_string());
+                tpub.push(iter_str.as_str());
+                vec_native.push(tpub.join("/"));
+            }
+            arr_strsplit.push(concat_str.as_str());
+            println!("{:?} {:?}", arr_strsplit.join("/").as_str(), vec_native);
+            exit_tx = fin::node::Context::spawn(
+                config, 
+                arr_strsplit.join("/").as_str(),
+                vec_native,
+                val_appx,
+                rand
+            ).unwrap();
         },
         "sync" => {
             let f_str = syncer_file.to_string();

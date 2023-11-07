@@ -5,6 +5,7 @@ rm -rf /tmp/*.db &> /dev/null
 vals=(27000 27100 27200 27300)
 tri=1000000
 
+rand=$(shuf -i 1000-150000000 -n 1)
 TESTDIR=${TESTDIR:="testdata/hyb_4"}
 TYPE=${TYPE:="release"}
 EXP=${EXP:-"appxcox_new"}
@@ -24,7 +25,8 @@ echo $st_time
     --val 100 \
     --tri $tri \
     --syncer $4 \
-    --batch $5 > logs/syncer.log &
+    --batch $5 \
+    --rand $rand > logs/syncer.log &
 
 for((i=0;i<4;i++)); do
 ./target/$TYPE/node \
@@ -37,7 +39,8 @@ for((i=0;i<4;i++)); do
     --tri $tri \
     --vsstype $3 \
     --syncer $4 \
-    --batch $5 > logs/$i.log &
+    --batch $5 \
+    --rand $rand > logs/$i.log &
 done
 
 # Client has finished; Kill the nodes
