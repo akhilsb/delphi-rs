@@ -143,11 +143,11 @@ impl Context{
         log::info!("Broadcasted message {:?}",prot_msg);
     }
 
-    pub async fn expand(coalesced_msg:(Point,Lev,Lev,Round),rho:Val,max_input:Val, exponent:Val)->Vec<(Lev, Vec<(Point, Point, Val)>)>{
+    pub async fn expand(coalesced_msg:(Point,Lev,Lev,Round),rho:Val,max_input:Val, exponent:f32)->Vec<(Lev, Vec<(Point, Point, Val)>)>{
         let mut levels_vals = Vec::new();
         for level in coalesced_msg.1..coalesced_msg.2+1{
             let mut level_vals = Vec::new();
-            let sep = rho*exponent.pow(level);
+            let sep = rho*((exponent.powf(level as f32).ceil()) as Val);
             let interval_start = ((coalesced_msg.0/sep)-1)*(sep);
             let interval_end = ((coalesced_msg.0/sep)+2)*(sep);
 

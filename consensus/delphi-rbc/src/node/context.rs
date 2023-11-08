@@ -31,7 +31,7 @@ pub struct Context {
     pub rho:Val,
     pub epsilon:Val,
     pub maxrange: Val,
-    pub exponent: Val,
+    pub exponent: f32,
 
     pub min_rounds_bin:Round,
     pub total_rounds_bin:Round,
@@ -59,7 +59,8 @@ impl Context {
         val: Val,
         epsilon: Val,
         rho:Val,
-        maxrange: Val
+        maxrange: Val,
+        exponent: f32
     ) -> anyhow::Result<oneshot::Sender<()>> {
         let prot_payload = &config.prot_payload;
         let v:Vec<&str> = prot_payload.split(',').collect();
@@ -104,19 +105,18 @@ impl Context {
                 // delta is the level of allowed overshoot, 
                 // epsilon is the final state of disagreement
 
-                let exponent:Val = 2;
+                let exponent:f32 = exponent;
                 let levels = maxrange as f64/rho as f64;
                 let exponent_log = (exponent as f64).log2();
                 let levels = (levels.log2()/exponent_log).ceil() as Lev;
-                let rounds = ((2*maxrange*(config.num_nodes as i64+3)*(levels as i64)) as f64/epsilon as f64).log2();
-                let rounds = (rounds/exponent_log).ceil() as Round;
-                let min_rounds = ((2*rho*(config.num_nodes as i64+3)*(levels as i64)) as f64/epsilon as f64).log2();
-                let min_rounds = (min_rounds/exponent_log).ceil() as Round;
-                let max_input:Val = exponent.pow(rounds+1);
+                let rounds = ((2*maxrange*(config.num_nodes as i64+3)*(levels as i64)) as f64/epsilon as f64).log2().ceil() as Round;
+                //let rounds = (rounds/exponent_log).ceil() as Round;
+                let min_rounds = ((2*rho*(config.num_nodes as i64+3)*(levels as i64)) as f64/epsilon as f64).log2().ceil() as Round;
+                let max_input:Val = exponent.powf((rounds+1) as f32).ceil() as Val;
                 log::info!("Min rounds:{}, Max rounds: {}",min_rounds,rounds);
                 let mut levelmap:HashMap<Lev,Level> = HashMap::default();
                 for level in 0..levels{
-                    let sep = rho*(exponent.pow(level));
+                    let sep = rho*((exponent.powf(level as f32).ceil()) as Val);
                     levelmap.insert(level, Level::new(sep, level, val, config.num_faults+1, config.num_nodes-config.num_faults));
                 }
                 // TODO: Estimate the number of rounds of approximate agreement needed

@@ -62,3 +62,8 @@ args:
         long: rand
         help: Seed random string for running protocols
         takes_value: true
+    - expo:
+        short: p
+        long: expo
+        help: Exponent for incrementing levels
+        takes_value: true

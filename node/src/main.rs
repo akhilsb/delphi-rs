@@ -36,6 +36,8 @@ async fn main() -> Result<()> {
         .expect("Unable to parse syncer ip file");
     let rand = m.value_of("rand")
         .expect("Unable to parse random number").parse::<usize>().unwrap();
+    let expo = m.value_of("expo")
+        .expect("Unable to parse exponent").parse::<f32>().unwrap();
     let conf_file = std::path::Path::new(conf_str);
     let str = String::from(conf_str);
     let mut config = match conf_file
@@ -84,10 +86,10 @@ async fn main() -> Result<()> {
             exit_tx = appxcon::node::Context::spawn(config, sleep, val_appx as u64,epsilon as u64).unwrap();
         },
         "del" =>{
-            exit_tx = delphi::node::Context::spawn(config,val_appx,epsilon,delta,tri).unwrap();
+            exit_tx = delphi::node::Context::spawn(config,val_appx,epsilon,delta,tri,expo).unwrap();
         },
         "delrbc" =>{
-            exit_tx = delphi_rbc::node::Context::spawn(config,val_appx,epsilon,delta,tri).unwrap();
+            exit_tx = delphi_rbc::node::Context::spawn(config,val_appx,epsilon,delta,tri,expo).unwrap();
         },
         "fin" =>{
             let rand = rand.to_string();

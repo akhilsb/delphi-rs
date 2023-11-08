@@ -26,7 +26,8 @@ echo $st_time
     --tri $tri \
     --syncer $4 \
     --batch $5 \
-    --rand $rand > logs/syncer.log &
+    --rand $rand \
+    --expo $6 > logs/syncer.log &
 
 for((i=0;i<4;i++)); do
 ./target/$TYPE/node \
@@ -40,7 +41,8 @@ for((i=0;i<4;i++)); do
     --vsstype $3 \
     --syncer $4 \
     --batch $5 \
-    --rand $rand > logs/$i.log &
+    --rand $rand \
+    --expo $6 > logs/$i.log &
 done
 
 # Client has finished; Kill the nodes
