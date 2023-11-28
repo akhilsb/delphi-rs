@@ -238,11 +238,11 @@ class Bench:
             #c.put(PathMaker.parameters_file(), '.')
         Print.info('Booting primaries...')
         st_time = round(time.time() * 1000) + 60000
-        ep = 10
-        delta = 100
+        ep = 5
+        delta = 50
         exp_vals = self.exp_setup(64)
         import numpy as np
-        tri = 10000
+        tri = 2000
         import random
         rand = random.randint(1000000,15000000)
         for i,ip in enumerate(hosts):
@@ -279,7 +279,8 @@ class Bench:
 
     def exp_setup(self,n):
         import numpy as np
-        values = np.random.normal(loc=525000,scale=100,size=n)
+        #values = np.random.normal(loc=2300,scale=50,size=n)
+        values = np.linspace(2200,2300,num=n)
         arr_int = []
         for val in values:
             arr_int.append(int(val))
@@ -352,11 +353,11 @@ class Bench:
         #     #c.put(PathMaker.parameters_file(), '.')
         Print.info('Booting primaries...')
         st_time = round(time.time() * 1000) + 60000
-        ep = 10
-        delta = 100
+        ep = 5
+        delta = 50
         exp_vals = self.exp_setup(64)
         import numpy as np
-        tri = 10000
+        tri = 2000
         import random
         rand = random.randint(1000000,15000000)
         for i,ip in enumerate(hosts):

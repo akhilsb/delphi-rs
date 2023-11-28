@@ -210,8 +210,9 @@ impl Context{
                 if term_weight> max_lev_weight{
                     max_lev_weight = term_weight as i128;
                 }
+                let term_weight = (interval.term_value(self.total_rounds_bin) as i128)*((interval.end-interval.start) as i128/level_state.sep as i128);
                 weight_sum += term_weight as i128;
-                weighted_sum += (midpoint as i128)*(term_weight as i128);
+                weighted_sum += (midpoint as i128)*(term_weight as i128)*((interval.end-interval.start) as i128/level_state.sep as i128);
             }
             if weight_sum == 0{
                 log::info!("Zero weight for level {}",level);
