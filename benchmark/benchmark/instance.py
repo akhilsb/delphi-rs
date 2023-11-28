@@ -110,7 +110,7 @@ class InstanceManager:
         response = client.describe_images(
             Filters=[{
                 'Name': 'description',
-                'Values': ['Canonical, Ubuntu, 20.04 LTS, amd64 focal image build on 2023-03-28']
+                'Values': ['Canonical, Ubuntu, 20.04 LTS, amd64 focal image build on 2023-10-25']
             }]
         )
         return response['Images'][0]['ImageId']
@@ -148,7 +148,7 @@ class InstanceManager:
                             'Value': self.INSTANCE_NAME
                         }]
                     }],
-                    EbsOptimized=True,
+                    EbsOptimized=False,
                     BlockDeviceMappings=[{
                         'DeviceName': '/dev/sda1',
                         'Ebs': {

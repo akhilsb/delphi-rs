@@ -243,7 +243,7 @@ impl Context{
         }
         else {
             // Find target proposal that was elected
-            if term_val == 2{
+            if term_val == 2 && !self.terminated{
                 if self.leader_election_state.contains_key(&(leader_round)){
                     let leader_node = self.leader_election_state.get(&(leader_round)).unwrap().2.unwrap();
                     let broadcasted_indices = self.mvba_state.node_msgs.get(&leader_node).unwrap().message.clone();
@@ -262,6 +262,7 @@ impl Context{
                         value: output as Val
                     }).await;
                     self.add_cancel_handler(cancel_handler);
+                    self.terminated = true;
                 }    
             }
             else {

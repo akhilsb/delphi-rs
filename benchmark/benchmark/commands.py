@@ -30,12 +30,16 @@ class CommandMaker:
         return f'./genconfig --blocksize 100 --delay 100 --base_port {bport} --client_base_port {client_bport} --NumNodes {num_nodes} --target . --client_run_port {client_run_port} --local true'
 
     @staticmethod
-    def run_primary(key,delay,ep,delta,val,tri,batch, debug=False):
+    def run_primary(key,delay,ep,delta,val,tri,batch,rand, debug=False):
         assert isinstance(key, str)
         assert isinstance(debug, bool)
         #v = '-vvv' if debug else '-vv'
         return (f'./node --config {key} --ip ip_file '
-                f'--sleep {delay} --vsstype hyb --batch 100 --epsilon {ep} --delta {delta} --val {val} --tri {tri} --syncer syncer')
+                f'--sleep {delay} --batch 100 --epsilon {ep} --delta {delta} --val {val} --tri {tri} --vsstype del --syncer syncer --rand {rand} --expo 2')
+    
+    @staticmethod
+    def unzip_tkeys(fileloc,dir, debug=False):
+        return (f'tar -xvzf {fileloc} && cp {dir}/* .')
     
     @staticmethod
     def run_syncer(key,delay, debug=False):
@@ -43,7 +47,7 @@ class CommandMaker:
         assert isinstance(debug, bool)
         #v = '-vvv' if debug else '-vv'
         return (f'./node --config {key} --ip ip_file '
-                f'--sleep {delay} --vsstype sync --batch 100 --epsilon 10 --delta 5000 --val 100 --tri 10 --syncer syncer')
+                f'--sleep {delay} --batch 100 --epsilon 10 --delta 5000 --val 100 --tri 10 --vsstype sync --syncer syncer --rand 100000 --expo 2')
 
     @staticmethod
     def run_worker(keys, committee, store, parameters, id, debug=False):

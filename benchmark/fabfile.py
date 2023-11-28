@@ -9,12 +9,13 @@ from benchmark.instance import InstanceManager
 from benchmark.remote import Bench, BenchError
 from benchmark.utils import PathMaker
 
+nodes = 8
 @task
 def local(ctx, debug=True):
     ''' Run benchmarks on localhost '''
     bench_params = {
         'faults': 0,
-        'nodes': 4,
+        'nodes': nodes,
         'workers': 1,
         'rate': 50_000,
         'tx_size': 512,
@@ -67,7 +68,7 @@ def log_v(ctx, debug=True):
 
 
 @task
-def create(ctx, nodes=1):
+def create(ctx, nodes=nodes):
     ''' Create a testbed'''
     try:
         InstanceManager.make().create_instances(nodes)
@@ -85,7 +86,7 @@ def destroy(ctx):
 
 
 @task
-def start(ctx, max=1):
+def start(ctx, max=nodes):
     ''' Start at most `max` machines per data center '''
     try:
         InstanceManager.make().start_instances(max)
@@ -125,7 +126,7 @@ def remote(ctx, debug=False):
     ''' Run benchmarks on AWS '''
     bench_params = {
         'faults': 0,
-        'nodes': [4],
+        'nodes': [64],
         'workers': 1,
         'collocate': True,
         'rate': [10_000, 110_000],
@@ -152,7 +153,7 @@ def rerun(ctx, debug=False):
     ''' Run benchmarks on AWS '''
     bench_params = {
         'faults': 0,
-        'nodes': [4],
+        'nodes': [64],
         'workers': 1,
         'collocate': True,
         'rate': [10_000, 110_000],
@@ -207,7 +208,7 @@ def logs(ctx):
     ''' Run benchmarks on AWS '''
     bench_params = {
         'faults': 0,
-        'nodes': [4],
+        'nodes': [64],
         'workers': 1,
         'collocate': True,
         'rate': [10_000, 110_000],

@@ -47,6 +47,8 @@ pub struct Context{
     pub tpubkey_share: HashMap<usize,Partial<BlstrsPublicKey>>,
     pub secret_key: Partial<BlstrsSecretKey>,
     pub sign_msg: String,
+
+    pub terminated: bool,
     /// Exit protocol
     exit_rx: oneshot::Receiver<()>,
 }
@@ -150,7 +152,7 @@ impl Context {
                 leader_election_state: HashMap::new(),
 
                 round_state:HashMap::default(),
-
+                terminated:false,
                 tpubkey_share:pkey_map,
                 secret_key:secret_share
             };

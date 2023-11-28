@@ -233,15 +233,18 @@ class Bench:
                 print('Node 0: writing syncer')
                 c.put(PathMaker.syncer(),'.')
             c.put(PathMaker.key_file(i), '.')
+            c.put(PathMaker.t_key_file(),'.')
             c.put("ip_file",'.')
             #c.put(PathMaker.parameters_file(), '.')
         Print.info('Booting primaries...')
         st_time = round(time.time() * 1000) + 60000
         ep = 10
-        delta = 1000
-        exp_vals = self.exp_setup(4)
+        delta = 100
+        exp_vals = self.exp_setup(64)
         import numpy as np
-        tri = np.max(exp_vals) - np.min(exp_vals)
+        tri = 10000
+        import random
+        rand = random.randint(1000000,15000000)
         for i,ip in enumerate(hosts):
             #host = Committee.ip(address)
             if i == 0:
@@ -263,8 +266,12 @@ class Bench:
                 exp_vals[i],
                 tri,
                 100,
+                rand,
                 debug=False
             )
+            unzip_cmd = CommandMaker.unzip_tkeys('tkeys.tar.gz','thresh_keys')
+            print(unzip_cmd)
+            self._background_run(ip,unzip_cmd,"unzip.log")
             print(cmd)
             log_file = PathMaker.primary_log_file(i)
             self._background_run(ip, cmd, log_file)
@@ -272,7 +279,7 @@ class Bench:
 
     def exp_setup(self,n):
         import numpy as np
-        values = np.random.normal(loc=525000,scale=10000,size=n)
+        values = np.random.normal(loc=525000,scale=100,size=n)
         arr_int = []
         for val in values:
             arr_int.append(int(val))
@@ -346,10 +353,12 @@ class Bench:
         Print.info('Booting primaries...')
         st_time = round(time.time() * 1000) + 60000
         ep = 10
-        delta = 1000
-        exp_vals = self.exp_setup(4)
+        delta = 100
+        exp_vals = self.exp_setup(64)
         import numpy as np
-        tri = np.max(exp_vals) - np.min(exp_vals)
+        tri = 10000
+        import random
+        rand = random.randint(1000000,15000000)
         for i,ip in enumerate(hosts):
             #host = Committee.ip(address)
             if i == 0:
@@ -360,6 +369,9 @@ class Bench:
                     st_time,
                     debug=False
                 )
+                print(cmd)
+                log_file = PathMaker.syncer_log_file()
+                self._background_run(ip, cmd, log_file)
             cmd = CommandMaker.run_primary(
                 PathMaker.key_file(i),
                 st_time,
@@ -368,6 +380,7 @@ class Bench:
                 exp_vals[i],
                 tri,
                 100,
+                rand,
                 debug=False
             )
             log_file = PathMaker.primary_log_file(i)

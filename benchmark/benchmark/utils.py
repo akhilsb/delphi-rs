@@ -30,6 +30,11 @@ class PathMaker:
     @staticmethod
     def syncer():
         return f'syncer'
+    
+    @staticmethod
+    def t_key_file():
+        #assert isinstance(i, int) and i >= 0
+        return f'tkeys.tar.gz'
     @staticmethod
     def key_file(i):
         assert isinstance(i, int) and i >= 0
