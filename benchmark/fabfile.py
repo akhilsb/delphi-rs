@@ -9,7 +9,7 @@ from benchmark.instance import InstanceManager
 from benchmark.remote import Bench, BenchError
 from benchmark.utils import PathMaker
 
-nodes = 8
+nodes = 14
 @task
 def local(ctx, debug=True):
     ''' Run benchmarks on localhost '''
@@ -126,7 +126,7 @@ def remote(ctx, debug=False):
     ''' Run benchmarks on AWS '''
     bench_params = {
         'faults': 0,
-        'nodes': [64],
+        'nodes': [112],
         'workers': 1,
         'collocate': True,
         'rate': [10_000, 110_000],
@@ -153,7 +153,7 @@ def rerun(ctx, debug=False):
     ''' Run benchmarks on AWS '''
     bench_params = {
         'faults': 0,
-        'nodes': [64],
+        'nodes': [112],
         'workers': 1,
         'collocate': True,
         'rate': [10_000, 110_000],
@@ -208,7 +208,7 @@ def logs(ctx):
     ''' Run benchmarks on AWS '''
     bench_params = {
         'faults': 0,
-        'nodes': [64],
+        'nodes': [112],
         'workers': 1,
         'collocate': True,
         'rate': [10_000, 110_000],

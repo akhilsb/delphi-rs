@@ -233,6 +233,9 @@ impl Context{
 
     #[async_recursion::async_recursion]
     pub async fn start_baa(self: &mut Context,leader_round:Round, baa_round:Round, term_val: Val, terminate: bool){
+        if self.terminated{
+            return;
+        }
         if !terminate{
             log::info!("Received request to start new round lround {} bround {}",leader_round,baa_round);
             // Restart next round with updated value
