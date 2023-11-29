@@ -10,6 +10,7 @@ pub struct RoundStateBin{
     pub echo1vals: HashSet<Val>,
     pub echo2vals: Vec<Val>,
     pub echo3vals: HashMap<Replica,Val>,
+    pub echo3sent: bool,
     pub termval: Option<Val>,
     pub partial_sig_vec: HashMap<Replica,PartialBlstrsSignature>,
     pub coin_state: Option<bool>
@@ -22,6 +23,7 @@ impl RoundStateBin{
             echo1vals: HashSet::new(),
             echo2vals: Vec::new(),
             echo3vals: HashMap::default(),
+            echo3sent:false,
             termval:None,
             partial_sig_vec: HashMap::default(),
             coin_state: None
@@ -41,6 +43,7 @@ impl RoundStateBin{
             echo1vals: HashSet::new(),
             echo2vals: Vec::new(),
             echo3vals: HashMap::default(),
+            echo3sent:false,
             termval:None,
             partial_sig_vec: HashMap::default(),
             coin_state: None
@@ -64,6 +67,7 @@ impl RoundStateBin{
             echo1vals: HashSet::new(),
             echo2vals: Vec::new(),
             echo3vals: echo3_map,
+            echo3sent:false,
             termval:None,
             partial_sig_vec: HashMap::default(),
             coin_state: None
@@ -80,6 +84,7 @@ impl RoundStateBin{
             echo1vals: HashSet::new(),
             echo2vals: Vec::new(),
             echo3vals: HashMap::default(),
+            echo3sent:false,
             termval:None,
             partial_sig_vec: sigmap,
             coin_state: None
@@ -164,7 +169,10 @@ impl RoundStateBin{
             if arr_vec[0].2.len() >= highthreshold{
                 self.echo2vals.push(parsed_bigint);
                 // send echo3 from here
-                echo3_msg = Some(parsed_bigint);
+                if !self.echo3sent{
+                    echo3_msg = Some(parsed_bigint);
+                    self.echo3sent = true;
+                }
             }
         }
         else{
@@ -179,7 +187,10 @@ impl RoundStateBin{
                 if arr_vec[1].2.len() >= highthreshold{
                     self.echo2vals.push(parsed_bigint);
                     // Send echo3 from here
-                    echo3_msg = Some(parsed_bigint);
+                    if !self.echo3sent{
+                        echo3_msg = Some(parsed_bigint);
+                        self.echo3sent = true;
+                    }
                 }
             }
         }
