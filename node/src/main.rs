@@ -85,6 +85,9 @@ async fn main() -> Result<()> {
         "appx" => {
             exit_tx = appxcon::node::Context::spawn(config, sleep, val_appx as u64,epsilon as u64).unwrap();
         },
+        "hyb" =>{
+            exit_tx = hyb_appxcon::node::Context::spawn(config,sleep,val_appx as u64,delta as u64,epsilon as u64,tri as u64).unwrap();
+        },
         "del" =>{
             exit_tx = delphi::node::Context::spawn(config,val_appx,epsilon,delta,tri,expo).unwrap();
         },

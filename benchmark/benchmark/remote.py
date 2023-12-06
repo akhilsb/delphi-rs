@@ -279,7 +279,7 @@ class Bench:
     def exp_setup(self,n):
         import numpy as np
         #values = np.random.normal(loc=2300,scale=50,size=n)
-        values = np.linspace(2200,2220,num=n)
+        values = np.linspace(2200,2380,num=n)
         arr_int = []
         for val in values:
             arr_int.append(int(val))

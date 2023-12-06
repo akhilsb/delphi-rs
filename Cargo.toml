@@ -13,5 +13,6 @@ members = [
     "consensus/delphi",
     "consensus/delphi-rbc",
     "consensus/fin",
+    "consensus/hyb_appxcon",
     "node",
 ]
