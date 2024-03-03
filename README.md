@@ -5,7 +5,7 @@ This repository contains a Rust implementation of the following distributed orac
 2. FIN ACS protocol [1]
 3. Abraham et al. AAA protocol [2]
 
-The repository uses the libchatter networking library available [here](https://github.com/libdist-rs/libchatter-rs).
+The repository uses the libchatter networking library available [here](https://github.com/libdist-rs/libchatter-rs). This code has been written as a research prototype and has not been vetted for security. Therefore, this repository can contain serious security vulnerabilities. Please use at your own risk. 
 
 ## Dataset
 The repository also contains a dataset containing values of prominent cryptocurrencies polled from 12 cryptocurrency exchanges. Details are available in the `dataset` folder. 
