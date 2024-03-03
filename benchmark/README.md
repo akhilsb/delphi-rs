@@ -1,4 +1,6 @@
 # Running Benchmarks
+Forked from (Narwhal) [https://github.com/asonnino/narwhal].
+
 This document explains how to benchmark the codebase and read benchmarks' results. It also provides a step-by-step tutorial to run benchmarks on [Amazon Web Services (AWS)](https://aws.amazon.com) accross multiple data centers (WAN).
 
 ## Local Benchmarks
@@ -22,67 +24,13 @@ bench_params = {
     'duration': 20,
 }
 ```
-They specify the number of primaries (`nodes`) and workers per primary (`workers`) to deploy, the input rate (tx/s) at which the clients submits transactions to the system (`rate`), the size of each transaction in bytes (`tx_size`), the number of faulty nodes ('faults), and the duration of the benchmark in seconds (`duration`). The minimum transaction size is 9 bytes, this ensure that the transactions of a client are all different. The benchmarking script will deploy as many clients as workers and divide the input rate equally amongst each client. For instance, if you configure the testbed with 4 nodes, 1 worker per node, and an input rate of 1,000 tx/s (as in the example above), the scripts will deploy 4 clients each submitting transactions to one node at a rate of 250 tx/s. When the parameters `faults` is set to `f > 0`, the last `f` nodes and clients are not booted; the system will thus run with `n-f` nodes (and `n-f` clients). 
-
-The nodes parameters determine the configuration for the primaries and workers:
-```python
-node_params = {
-    'header_size': 1_000,
-    'max_header_delay': 100,
-    'gc_depth': 50,
-    'sync_retry_delay': 10_000,
-    'sync_retry_nodes': 3,
-    'batch_size': 500_000,
-    'max_batch_delay': 100
-}
-```
-They are defined as follows:
-* `header_size`: The preferred header size. The primary creates a new header when it has enough parents and enough batches' digests to reach `header_size`. Denominated in bytes.
-* `max_header_delay`: The maximum delay that the primary waits between generating two headers, even if the header did not reach `max_header_size`. Denominated in ms.
-* `gc_depth`: The depth of the garbage collection (Denominated in number of rounds).
-* `sync_retry_delay`: The delay after which the synchronizer retries to send sync requests. Denominated in ms.
-* `sync_retry_nodes`: Determine with how many nodes to sync when re-trying to send sync-request. These nodes are picked at random from the committee.
-* `batch_size`: The preferred batch size. The workers seal a batch of transactions when it reaches this size. Denominated in bytes.
-* `max_batch_delay`: The delay after which the workers seal a batch of transactions, even if `max_batch_size` is not reached. Denominated in ms.
 
 ### Run the benchmark
 Once you specified both `bench_params` and `node_params` as desired, run:
 ```
 $ fab local
 ```
-This command first recompiles your code in `release` mode (and with the `benchmark` feature flag activated), thus ensuring you always benchmark the latest version of your code. This may take a long time the first time you run it. It then generates the configuration files and keys for each node, and runs the benchmarks with the specified parameters. It finally parses the logs and displays a summary of the execution similarly to the one below. All the configuration and key files are hidden JSON files; i.e., their name starts with a dot (`.`), such as `.committee.json`.
-```
------------------------------------------
- SUMMARY:
------------------------------------------
- + CONFIG:
- Faults: 0 node(s)
- Committee size: 4 node(s)
- Worker(s) per node: 1 worker(s)
- Collocate primary and workers: True
- Input rate: 50,000 tx/s
- Transaction size: 512 B
- Execution time: 19 s
-
- Header size: 1,000 B
- Max header delay: 100 ms
- GC depth: 50 round(s)
- Sync retry delay: 10,000 ms
- Sync retry nodes: 3 node(s)
- batch size: 500,000 B
- Max batch delay: 100 ms
-
- + RESULTS:
- Consensus TPS: 46,478 tx/s
- Consensus BPS: 23,796,531 B/s
- Consensus latency: 464 ms
-
- End-to-end TPS: 46,149 tx/s
- End-to-end BPS: 23,628,541 B/s
- End-to-end latency: 557 ms
------------------------------------------
-```
-The 'Consensus TPS' and 'Consensus latency' respectively report the average throughput and latency without considering the client. The consensus latency thus refers to the time elapsed between the block's creation and its commit. In contrast, 'End-to-end TPS' and 'End-to-end latency' report the performance of the whole system, starting from when the client submits the transaction. The end-to-end latency is often called 'client-perceived latency'. To accurately measure this value without degrading performance, the client periodically submits 'sample' transactions that are tracked across all the modules until they get committed into a block; the benchmark scripts use sample transactions to estimate the end-to-end latency.
+This command first recompiles your code in `release` mode (and with the `benchmark` feature flag activated), thus ensuring you always benchmark the latest version of your code. This may take a long time the first time you run it. It then generates the configuration files and keys for each node, and runs the benchmarks with the specified parameters. 
 
 ## AWS Benchmarks
 This repo integrates various python scripts to deploy and benchmark the codebase on [Amazon Web Services (AWS)](https://aws.amazon.com). They are particularly useful to run benchmarks in the WAN, across multiple data centers. This section provides a step-by-step tutorial explaining how to use them.
@@ -113,12 +61,12 @@ The file [settings.json](https://github.com/asonnino/narwhal/blob/master/benchma
     },
     "port": 5000,
     "repo": {
-        "name": "narwhal",
-        "url": "https://github.com/asonnino/narwhal.git",
+        "name": "delphi-rs",
+        "url": "https://github.com/akhilsb/delphi-rs.git",
         "branch": "master"
     },
     "instances": {
-        "type": "m5d.8xlarge",
+        "type": "t2.micro",
         "regions": ["us-east-1", "eu-north-1", "ap-southeast-2", "us-west-1", "ap-northeast-1"]
     }
 }
@@ -137,7 +85,7 @@ The second block (`ports`) specifies the TCP ports to use:
 ```json
 "port": 5000,
 ```
-Narwhal requires a number of TCP ports, depening on the number of workers per node, Each primary requires 2 ports (one to receive messages from other primaties and one to receive messages from its workers), and each worker requires 3 ports (one to receive client transactions, one to receive messages from its primary, and one to receive messages from other workers). Note that the script will open a large port range (5000-7000) to the WAN on all your AWS instances. 
+Narwhal requires a number of TCP ports, depening on the number of workers per node, Each primary requires 2 ports (one to receive messages from other primaties and one to receive messages from its workers), and each worker requires 3 ports (one to receive client transactions, one to receive messages from its primary, and one to receive messages from other workers). Note that the script will open a large port range (5000-9000) to the WAN on all your AWS instances. 
 
 The third block (`repo`) contains the information regarding the repository's name, the URL of the repo, and the branch containing the code to deploy: 
 ```json
@@ -152,16 +100,16 @@ Remember to update the `url` field to the name of your repo. Modifying the branc
 The the last block (`instances`) specifies the [AWS instance type](https://aws.amazon.com/ec2/instance-types) and the [AWS regions](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions) to use:
 ```json
 "instances": {
-    "type": "m5d.8xlarge",
+    "type": "t2.micro",
     "regions": ["us-east-1", "eu-north-1", "ap-southeast-2", "us-west-1", "ap-northeast-1"]
 }
 ```
-The instance type selects the hardware on which to deploy the testbed. For example, `m5d.8xlarge` instances come with 32 vCPUs (16 physical cores), 128 GB of RAM, and guarantee 10 Gbps of bandwidth. The python scripts will configure each instance with 300 GB of SSD hard drive. The `regions` field specifies the data centers to use. If you require more nodes than data centers, the python scripts will distribute the nodes as equally as possible amongst the data centers. All machines run a fresh install of Ubuntu Server 20.04.
+The instance type selects the hardware on which to deploy the testbed. For example, `t2.micro` instances come with 1 vCPU (1 physical core), and 1 GB of RAM. The python scripts will configure each instance with 300 GB of SSD hard drive. The `regions` field specifies the data centers to use. If you require more nodes than data centers, the python scripts will distribute the nodes as equally as possible amongst the data centers. All machines run a fresh install of Ubuntu Server 20.04.
 
 ### Step 4. Create a testbed
-The AWS instances are orchestrated with [Fabric](http://www.fabfile.org) from the file [fabfile.py](https://github.com/asonnino/narwhal/blob/master/benchmark/fabfile.pyy) (located in [narwhal/benchmarks](https://github.com/asonnino/narwhal/blob/master/benchmark)); you can list all possible commands as follows:
+The AWS instances are orchestrated with [Fabric](http://www.fabfile.org) from the file [fabfile.py](https://github.com/akhil-sb/delphi-rs/blob/master/benchmark/fabfile.py) (located in [narwhal/benchmarks](https://github.com/akhil-sb/delphi-rs/blob/master/benchmark)); you can list all possible commands as follows:
 ```
-$ cd narwhal/benchmark
+$ cd delphi-rs/benchmark
 $ fab --list
 ```
 The command `fab create` creates new AWS instances; open [fabfile.py](https://github.com/asonnino/narwhal/blob/master/benchmark/fabfile.py) and locate the `create` task:
@@ -195,44 +143,18 @@ After setting up the testbed, running a benchmark on AWS is similar to running i
 def remote(ctx):
     ...
 ```
-The benchmark parameters are similar to [local benchmarks](https://github.com/asonnino/narwhal/tree/master/benchmark#local-benchmarks) but allow to specify the number of nodes and the input rate as arrays to automate multiple benchmarks with a single command. The parameter `runs` specifies the number of times to repeat each benchmark (to later compute the average and stdev of the results), and the parameter `collocate` specifies whether to collocate all the node's workers and the primary on the same machine. If `collocate` is set to `False`, the script will run one node per data center (AWS region), with its primary and each of its worker running on a dedicated instance.
-```python
-bench_params = {
-    'nodes': [10, 20, 30],
-    'workers: 2,
-    'collocate': True,
-    'rate': [20_000, 30_000, 40_000],
-    'tx_size': 512,
-    'faults': 0,
-    'duration': 300,
-    'runs': 2,
-}
-```
-Similarly to local benchmarks, the scripts will deploy as many clients as workers and divide the input rate equally amongst each client. Each client is colocated with a worker, and only submit transactions to the worker with whom they share the machine.
-
-Once you specified both `bench_params` and `node_params` as desired, run:
+Run the benchmark with the following command. 
 ```
 $ fab remote
 ```
-This command first updates all machines with the latest commit of the GitHub repo and branch specified in your file [settings.json](https://github.com/asonnino/narwhal/blob/master/benchmark/settings.json) (step 3); this ensures that benchmarks are always run with the latest version of the code. It then generates and uploads the configuration files to each machine, runs the benchmarks with the specified parameters, and downloads the logs. It finally parses the logs and prints the results into a folder called `results` (which is automatically created if it doesn't already exists). You can run `fab remote` multiple times without fearing to override previous results, the command either appends new results to a file containing existing ones or prints them in separate files. If anything goes wrong during a benchmark, you can always stop it by running `fab kill`.
- 
-### Step 6. Plot the results
-Once you have enough results, you can aggregate and plot them:
-```
-$ fab plot
-```
-This command creates a latency graph, a throughput graph, and a robustness graph in a folder called `plots` (which is automatically created if it doesn't already exists). You can adjust the plot parameters to filter which curves to add to the plot:
-```python
-plot_params = {
-    'faults': [0],
-    'nodes': [10, 20, 50],
-    'workers': [1],
-    'collocate': True,
-    'tx_size': 512,
-    'max_latency': [3_500, 4_500]
-}
-```
+This command first updates all machines with the latest commit of the GitHub repo and branch specified in your file [settings.json](https://github.com/asonnino/narwhal/blob/master/benchmark/settings.json) (step 3); this ensures that benchmarks are always run with the latest version of the code. It then generates and uploads the configuration files to each machine, and runs the benchmarks with the specified parameters. The input parameters for Delphi can be set in the `_config` function in the (remote.py)[https://github.com/akhilsb/delphi-rs/benckmark/benchmark/remote.py] file in the `benchmark` folder. 
 
-The first graph ('latency') plots the latency versus the throughput. It shows that the latency is low until a fairly neat threshold after which it drastically increases. Determining this threshold is crucial to understand the limits of the system. 
+### Step 6: Download logs
+The following command downloads the log file from the `syncer` titled `syncer.log`. 
+```
+$ fab logs
+```
+The `syncer.log` file contains the details about the latency of the protocol and the outputs of the nodes. Note that this log file needs to be downloaded only after allowing the protocol sufficient time to terminate (Ideally within 5 minutes). If anything goes wrong during a benchmark, you can always stop it by running `fab kill`.
 
-Another challenge is comparing apples-to-apples between different deployments of the system. The challenge here is again that latency and throughput are interdependent, as a result a throughput/number of nodes chart could be tricky to produce fairly. The way to do it is to define a maximum latency and measure the throughput at this point instead of simply pushing every system to its peak throughput (where latency is meaningless). The second graph ('tps') plots the maximum achievable throughput under a maximum latency for different numbers of nodes.
+## Running FIN
+The FIN protocol requires the presence of a file with the name `tkeys.tar.gz`, which is a compressed file containing the BLS public key as `pub`, partial secret key shares as `sec0,...,sec{n-1}`, and corresponding public keys as `pub0,...,pubn-1`. This repository contains these keys for values of `n=16,62,112,160`. 

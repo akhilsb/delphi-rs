@@ -39,8 +39,10 @@ class Bench:
             ctx.connect_kwargs.pkey = RSAKey.from_private_key_file(
                 self.manager.settings.key_path
             )
+            #ctx.connect_kwargs = {"key_filename": "/home/akhil/.ssh/aws", "passphrase": ""}
             self.connect = ctx.connect_kwargs
         except (IOError, PasswordRequiredException, SSHException) as e:
+            # will print this message followed by traceback
             raise BenchError('Failed to load SSH key', e)
 
     def _check_stderr(self, output):
@@ -77,10 +79,17 @@ class Bench:
         hosts = self.manager.hosts(flat=True)
         try:
             g = Group(*hosts, user='ubuntu', connect_kwargs=self.connect)
+            #g.run('ls')
             g.run(' && '.join(cmd), hide=True)
             Print.heading(f'Initialized testbed of {len(hosts)} nodes')
         except (GroupException, ExecutionError) as e:
             e = FabricError(e) if isinstance(e, GroupException) else e
+            import traceback
+            import sys
+            print("Exception",e)
+            print(traceback.format_exc())
+             # or
+            print(sys.exc_info()[2])
             raise BenchError('Failed to install repo on testbed', e)
 
     def kill(self, hosts=[], delete_logs=False):
@@ -240,7 +249,7 @@ class Bench:
         st_time = round(time.time() * 1000) + 60000
         ep = 1
         delta = 50
-        exp_vals = self.exp_setup(112)
+        exp_vals = self.exp_setup(160)
         import numpy as np
         tri = 200
         import random
@@ -353,10 +362,10 @@ class Bench:
         Print.info('Booting primaries...')
         st_time = round(time.time() * 1000) + 60000
         ep = 2
-        delta = 10
-        exp_vals = self.exp_setup(112)
+        delta = 2
+        exp_vals = self.exp_setup(160)
         import numpy as np
-        tri = 200
+        tri = 20
         import random
         rand = random.randint(1000000,15000000)
         for i,ip in enumerate(hosts):
@@ -460,10 +469,14 @@ class Bench:
                     PathMaker.syncer_log_file(),
                     local=PathMaker.syncer_log_file()
                 )
-            c.get(
-                PathMaker.client_log_file(i, 0), 
-                local=PathMaker.client_log_file(i, 0)
-            )
+                c.get(
+                    PathMaker.client_log_file(i, 0), 
+                    local=PathMaker.client_log_file(i, 0)
+                )
+            # c.get(
+            #     PathMaker.client_log_file(i, 0), 
+            #     local=PathMaker.client_log_file(i, 0)
+            # )
             # c.get(
             #     PathMaker.worker_log_file(i, id),     
             #     local=PathMaker.worker_log_file(i, id)

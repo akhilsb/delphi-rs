@@ -9,7 +9,7 @@ use super::Context;
 impl Context {
     #[async_recursion]
     pub async fn elect_leader(&mut self, round:Round){
-        if !self.leader_election_state.contains_key(&round){
+        if !self.leader_election_state.contains_key(&round) && !self.terminated{
             let log_n = (self.num_nodes as f64).log2().ceil() as u32;
             let mut rand_map:HashMap<usize, Vec<PartialBlstrsSignature>> = HashMap::default();
             for index in 0..log_n{
