@@ -60,9 +60,22 @@ $ ./scripts/appxcon-test.sh {epsilon} {rho} {Delta} testdata/hyb_4/syncer
 
 8. The outputs are logged into the `syncer.log` file in logs directory. The outputs of each node are printed in a JSON format, along with the amount of time the node took to terminate the protocol. 
 
-9. Running the FIN ACS protocol requires additional configuration. FIN uses BLS threshold signatures to generate common coins necessary for proposal election and Binary Byzantine Agreement. This setup includes a master public key in the `pub` file, $n$ partial secret keys (one for each node) as `sec0,...,sec3` files, and the $n$ partial public keys as `pub0,...,pub3` files. We utilized the `crypto_blstrs` library in the [apss](https://github.com/ISTA-SPiDerS/apss) repository to generate these keys. We pregenerated these files for $n=16,64,112,160$ in the benchmark folder, in zip files `tkeys-{n}.tar.gz`. After generating these files, place them in the configuration directory (`testdata/hyb_4` in this example) and run the following command. 
+9. Running the FIN ACS protocol requires additional configuration. FIN uses BLS threshold signatures to generate common coins necessary for proposal election and Binary Byzantine Agreement. This setup includes a master public key in the `pub` file, $n$ partial secret keys (one for each node) as `sec0,...,sec3` files, and the $n$ partial public keys as `pub0,...,pub3` files. We utilized the `crypto_blstrs` library in the [apss](https://github.com/ISTA-SPiDerS/apss) repository to generate these keys. We pregenerated these files for $n=16,64,112,160$ in the benchmark folder, in zip files `tkeys-{n}.tar.gz`. After generating these files, place them in the configuration directory (`testdata/hyb_4` in this example) and run the following command (We already performed this step and have these files ready in `testdata/hyb_4` folder). 
 ```
-./scripts/fin-test.sh testdata/hyb_4/syncer
+# Kill previous processes running on these ports
+$ sudo lsof -ti:7000-7015 | xargs kill -9
+$ ./scripts/fin-test.sh testdata/hyb_4/syncer
+```
+
+10. Similarly, Abraham et al.'s Approximate Agreement protocol can be run using the following command.
+```
+# Kill previous processes running on these ports
+$ sudo lsof -ti:7000-7015 | xargs kill -9
+$ ./scripts/abraham-test.sh {epsilon} {delta} {Delta} testdata/hyb_4/syncer
+```
+The parameters {epsilon} and {delta} must be equal in this context to yield Abraham et al.'s protocol. {Delta} must be set to be equal to the difference between honest inputs `M-m`. Example configuration run includes the following command.
+```
+$ ./scripts/abraham-test.sh 2 2 20 testdata/hyb_4/syncer
 ```
 
 ## Running in AWS
@@ -88,4 +101,11 @@ The artifact is organized into the following modules of code.
 
 6. The `tools` directory consists of code that generates configuration files for nodes. This library has been borrowed from the `libchatter` (https://github.com/libdist-rs/libchatter-rs) repository. 
 
-7. The `consensus` directory contains the implementations of various protocols. Primarily, it contains implementations of Abraham et al.'s approximate agreement protocol in the `appxcon` subdirectory, `delphi` protocol in the `delphi` subdirectory, and FIN protocol in `fin` subdirectory. Each protocol contains a `context.rs` file, which contains a function named `spawn` from where the protocol's execution starts. This function is called by the `node` library in the `node` folder. This library contains a `main.rs` file, which spawns an instance of a node running the respective protocol by invoking the `spawn` function. 
+7. The `consensus` directory contains the implementations of various protocols. Primarily, it contains implementations of Abraham et al.'s approximate agreement protocol in the `hyb_appxcon` subdirectory, `delphi` protocol in the `delphi` subdirectory, and FIN protocol in `fin` subdirectory. Each protocol contains a `context.rs` file, which contains a function named `spawn` from where the protocol's execution starts. This function is called by the `node` library in the `node` folder. This library contains a `main.rs` file, which spawns an instance of a node running the respective protocol by invoking the `spawn` function. 
+
+# References
+```
+[1] Abraham, Ittai, Yonatan Amit, and Danny Dolev. "Optimal resilience asynchronous approximate agreement." In Principles of Distributed Systems: 8th International Conference, OPODIS 2004, Grenoble, France, December 15-17, 2004, Revised Selected Papers 8, pp. 229-239. Springer Berlin Heidelberg, 2005.
+
+[2] Duan, Sisi, Xin Wang, and Haibin Zhang. "Fin: Practical signature-free asynchronous common subset in constant time." In Proceedings of the 2023 ACM SIGSAC Conference on Computer and Communications Security, pp. 815-829. 2023.
+```

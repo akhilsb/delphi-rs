@@ -8,7 +8,22 @@ use fnv::FnvHashMap;
 use std::{net::{SocketAddr, SocketAddrV4}, collections::HashMap, time::{SystemTime, UNIX_EPOCH}};
 
 use super::{RoundState, Handler, SyncHandler, RoundStateBin, ProtMsg, WrapperMsg};
+/*
+    Abraham et al.'s Approximate Consensus proceeds in rounds. Every round has a state of its own.
+    Every round is composed of three stages: a) n-parallel reliable broadcast, b) Witness technique,
+    and c) Value reduction. The three stages form a round for Approximate Agreement. 
 
+    The RoundState object is designed to handle all three stages. For the reliable broadcast stage, all n nodes
+    initiate a reliable broadcast to broadcast their current round values. This stage of the protocol ends 
+    when n-f reliable broadcasts are terminated. 
+
+    In the witness technique stage, every node broadcasts the first n-f nodes whose values are reliably accepted 
+    by the current node. We call node $i$ a witness to node $j$ if j reliably accepted the first n-f messages 
+    reliably accepted by node $i$. Every node stays in this stage until it accepts n-f witnesses. 
+
+    After accepting n-f witnesses, the node updates its value for the next round and repeats the process for 
+    a future round. 
+*/
 pub struct Context {
     /// Networking context
     pub net_send: TcpReliableSender<Replica,WrapperMsg,Acknowledgement>,
@@ -50,7 +65,12 @@ pub struct Context {
     /// Cancel Handlers
     pub cancel_handlers: HashMap<u64,Vec<CancelHandler<Acknowledgement>>>,
 }
-
+/**
+ * Abraham et al. also requires a Round Estimation protocol to estimate the number of rounds to run.
+ * We did not implement this part and give the real difference \delta as an input to the protocol. 
+ * The value tri signifies the range of honest inputs M-m. 
+ * The value delta is redundant in this context, as it is always equal to epsilon. 
+ */
 impl Context {
     pub fn spawn(
         config: Node,
@@ -107,7 +127,6 @@ impl Context {
                 //let v:Vec<&str> = prot_payload.split(',').collect();
                 log::info!("Prot payload {:?}",prot_payload);
                 //let init_value:u64 = v[1].parse::<u64>().unwrap();
-                // delta is the level of allowed overshoot, 
                 // epsilon is the final state of disagreement
                 let rounds_delta:f64 = tri as f64/delta as f64;
                 let rounds_delta = rounds_delta.log2().ceil() as u64;

@@ -49,7 +49,7 @@ impl Context{
             // Update round
             self.value = nr_val;
             self.round = round+1;
-            // write round estimation protocol
+            // TODO: write round estimation protocol
             if self.round <= 10{
                 // Initiate next RBCInit now
                 log::info!("Protocol completed round {} with new round value {} ",self.round,self.value);
