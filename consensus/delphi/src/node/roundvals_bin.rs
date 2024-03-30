@@ -3,12 +3,18 @@ use std::collections::{HashSet};
 use types::{appxcon::{Replica}, Point, Lev, Val};
 
 #[derive(Debug,Clone)]
+/**
+ * RoundStateBin object contains the state of a round of a Binary Approximate Agreement instance. 
+ * It contains state variables ECHO1s, ECHO2s, and a termination value for that round. 
+ * Each round requires a new RoundStateBin instance. 
+ */
 pub struct RoundStateBin{
-    // Map of Replica, and binary state of two values, their echos list and echo2 list, list of values for which echo1s were sent and echo2s list
+    // (Val,Set1,Set2,bool,bool): Value, List of all nodes who sent ECHO1 for this Value, List of all nodes who sent ECHO2 for this Value, If this node sent an ECHO1, If this node sent an ECHO2 for this value. 
     pub state: Vec<(Val,HashSet<Replica>,HashSet<Replica>,bool,bool)>,
     pub echo1vals: HashSet<Val>,
     pub echo2vals: Vec<Val>,
     pub term_val:Option<Val>,
+    // These variables are for logging purposes only
     pub start: Point,
     pub end: Point,
     pub level:Lev
@@ -72,6 +78,7 @@ impl RoundStateBin{
                 log::debug!("Got t+1 ECHO messages for BAA inst {}->{} in Level {}, sending ECHO",self.start,self.end,self.level);
                 //arr_vec[0].1.insert(myid);
                 echo1_msg = Some(msg.clone());
+                // Do not send ECHO1 twice. 
                 arr_vec[0].3 = true;
             }
             // check for 2t+1 votes: if it has 2t+1 votes, send out echo2 message
@@ -86,6 +93,7 @@ impl RoundStateBin{
                     let next_round_val = (vec_arr[0].clone()+vec_arr[1].clone())/2;
                     self.term_val = Some(next_round_val);
                 }
+                // Do not send ECHO2 twice. 
                 arr_vec[0].4 = true;
             }
         }
@@ -149,7 +157,7 @@ impl RoundStateBin{
             }
         }
     }
-
+    // Checks if the round has terminated. 
     pub fn terminated(&self)-> bool{
         self.term_val.is_some()
     }

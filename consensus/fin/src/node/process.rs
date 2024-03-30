@@ -19,7 +19,9 @@ impl Context{
         }
         true
     }
-
+    /**
+     * Message deserialization happens here. Message is deserialized and passed to the appropriate handling function. 
+     */
     pub(crate) async fn process_msg(&mut self, wrapper_msg: WrapperMsg){
         log::debug!("Received protocol msg: {:?}",wrapper_msg);
         let msg = Arc::new(wrapper_msg.clone());

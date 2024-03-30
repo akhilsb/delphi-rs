@@ -37,15 +37,12 @@ for((i=0;i<4;i++)); do
     --epsilon $1 \
     --delta $2 \
     --val ${vals[$i]} \
-    --tri $tri \
-    --vsstype $3 \
+    --tri $3 \
+    --vsstype del \
     --syncer $4 \
     --batch 10 \
     --rand $rand \
     --expo 2 > logs/$i.log &
 done
-
-# Client has finished; Kill the nodes
-killall ./target/$TYPE/appxcox_new &> /dev/null
 
 # Kill all nodes sudo lsof -ti:7000-7015 | xargs kill -9

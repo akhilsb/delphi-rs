@@ -6,6 +6,9 @@ use super::{Context, create_roundstate};
 
 impl Context{
     #[async_recursion::async_recursion]
+    /**
+     * Handles a READY message from a reliable broadcast. 
+     */
     pub async fn process_ready(&mut self, main_msg:Msg, ready_sender:Replica){
         let rbc_originator = main_msg.origin;
         let round_state_map = &mut self.round_state;

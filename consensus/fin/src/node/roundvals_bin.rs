@@ -3,6 +3,10 @@ use std::collections::{HashSet, HashMap};
 use crypto_blstrs::{threshold_sig::{PartialBlstrsSignature, BlstrsSignature}, crypto::threshold_sig::{CombinableSignature, Signature}};
 use types::{appxcon::{Replica}, Val};
 
+/**
+ * Each round of [ABY'22]'s binary BA protocol. 
+ * This protocol consists of ECHO1, ECHO2, and ECHO3 messages. 
+ */
 #[derive(Debug,Clone)]
 pub struct RoundStateBin{
     // Map of Replica, and binary state of two values, their echos list and echo2 list, list of values for which echo1s were sent and echo2s list

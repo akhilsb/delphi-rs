@@ -6,22 +6,7 @@ use crate::node::{
     context::Context
 };
 
-/*
-    Approximate Consensus proceeds in rounds. Every round has a state of its own.
-    Every round is composed of three stages: a) n-parallel reliable broadcast, b) Witness technique,
-    and c) Value reduction. The three stages form a round for Approximate Agreement. 
 
-    The RoundState object is designed to handle all three stages. For the reliable broadcast stage, all n nodes
-    initiate a reliable broadcast to broadcast their current round values. This stage of the protocol ends 
-    when n-f reliable broadcasts are terminated. 
-
-    In the witness technique stage, every node broadcasts the first n-f nodes whose values are reliably accepted 
-    by the current node. We call node $i$ a witness to node $j$ if j reliably accepted the first n-f messages 
-    reliably accepted by node $i$. Every node stays in this stage until it accepts n-f witnesses. 
-
-    After accepting n-f witnesses, the node updates its value for the next round and repeats the process for 
-    a future round. 
-*/
 impl Context{
     pub fn check_proposal(&self,wrapper_msg: Arc<WrapperMsg>) -> bool {
         // validate MAC
@@ -37,6 +22,9 @@ impl Context{
         true
     }
     
+    /**
+     * Receives a message, deserializes it, and passes it to the appropriate handling function. 
+     */
     pub(crate) async fn process_msg(&mut self, wrapper_msg: WrapperMsg){
         log::debug!("Received protocol msg: {:?}",wrapper_msg);
         let msg = Arc::new(wrapper_msg.clone());

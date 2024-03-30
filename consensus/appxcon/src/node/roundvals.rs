@@ -1,7 +1,10 @@
 use std::collections::{HashSet, HashMap};
 
 use types::appxcon::{Replica, Msg};
-
+/**
+ * The State of each round of Approximate Agreement. 
+ * It contains information about Reliable Broadcasts of all n nodes, Witnesses sent and accepted, and Accepted values through RBC. 
+ */
 #[derive(Debug,Clone)]
 pub struct RoundState{
     pub node_msgs: HashMap<Replica,Msg>,

@@ -7,7 +7,9 @@ use fnv::FnvHashMap;
 use std::{net::{SocketAddr, SocketAddrV4}, collections::HashMap, time::{SystemTime, UNIX_EPOCH}};
 
 use super::{Handler, SyncHandler, Level};
-
+/**
+ * This context contains necessary state variables for executing Delphi
+ */
 pub struct Context {
     /// Networking context
     pub net_send: TcpReliableSender<Replica,WrapperMsg,Acknowledgement>,
@@ -22,23 +24,31 @@ pub struct Context {
     pub payload:usize,
 
     /// PKI
-    /// Replica map
+    /// Map of secret keys
     pub sec_key_map:HashMap<Replica, Vec<u8>>,
 
     /// Round number and Approx Consensus related context
     pub round:Round,
+    // Starting value v_i
     pub value:Val,
+    // Starting separation \rho_0
     pub rho:Val,
+    // Desired \epsilon value
     pub epsilon:Val,
+    // \Delta value for parameter setting
     pub maxrange: Val,
+    // Exponent: The separation increase factor between levels. 
+    // If separation between checkpoints at level 0 is \rho_0, at level 1, it is exponent*\rho_0 and so on. 
     pub exponent: f32,
 
+    // Total number of rounds for Approximate Agreement
     pub total_rounds_bin:Round,
+    // Total number of levels. Calculated based on \Delta, \rho_0, and exponent. 
     pub total_levels: Lev,
 
     pub input: Val,
     pub max_input:Val,
-    /// State context
+    /// State context: Contains the map of levels from 0 to total_levels. Keeps track of Binary Approximate Agreement instances at all levels. 
     pub round_state: HashMap<Lev,Level>,
     /// Exit protocol
     exit_rx: oneshot::Receiver<()>,
@@ -47,6 +57,9 @@ pub struct Context {
 }
 
 impl Context {
+    /**
+     * Protocol begins here. 
+     */
     pub fn spawn(
         config: Node,
         val: Val,
@@ -95,22 +108,18 @@ impl Context {
                 let prot_payload = &config.prot_payload;
                 let v:Vec<&str> = prot_payload.split(',').collect();
                 let _init_value:u64 = v[1].parse::<u64>().unwrap();
-                // delta is the level of allowed overshoot, 
-                // epsilon is the final state of disagreement
-
+                // epsilon is the final level of disagreement
                 let exponent:f32 = exponent;
                 let levels = maxrange as f64/rho as f64;
                 let exponent_log = (exponent as f64).log2();
                 let levels = (levels.log2()/exponent_log).ceil() as Lev;
                 let rounds = ((2*maxrange*(config.num_nodes as i64+3)*(levels as i64)) as f64/epsilon as f64).log2().ceil() as Round;
                 let max_input:Val = exponent.powf((rounds+1) as f32).ceil() as Val;
-
                 let mut levelmap:HashMap<Lev,Level> = HashMap::default();
                 for level in 0..levels{
                     let sep = rho*((exponent.powf(level as f32).ceil()) as Val);
                     levelmap.insert(level, Level::new(sep, level, val, config.num_faults+1, config.num_nodes-config.num_faults));
                 }
-                // TODO: Estimate the number of rounds of approximate agreement needed
                 let mut c = Context {
                     net_send: consensus_net,
                     net_recv: rx_net_to_consensus,
@@ -140,11 +149,9 @@ impl Context {
                 for (id, sk_data) in config.sk_map.clone() {
                     c.sec_key_map.insert(id, sk_data.clone());
                 }
-                //c.invoke_coin.insert(100, Duration::from_millis(sleep_time.try_into().unwrap()));
                 if let Err(e) = c.run().await {
                     log::error!("Consensus error: {}", e);
                 }
-                log::debug!("Started n-parallel RBC with value {} and epsilon {}",c.value,c.epsilon);
             });
             Ok(exit_tx)
         }

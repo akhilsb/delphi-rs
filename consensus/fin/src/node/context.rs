@@ -159,7 +159,6 @@ impl Context {
             for (id, sk_data) in config.sk_map.clone() {
                 c.sec_key_map.insert(id.try_into().unwrap(), sk_data.clone());
             }
-            //c.invoke_coin.insert(100, Duration::from_millis(sleep_time.try_into().unwrap()));
             if let Err(e) = c.run().await {
                 log::error!("Consensus error: {}", e);
             }

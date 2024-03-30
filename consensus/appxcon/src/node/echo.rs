@@ -5,6 +5,9 @@ use types::appxcon::{Msg, Replica, ProtMsg};
 use super::{Context, RoundState};
 
 impl Context{
+    /**
+     * Handles an ECHO message from a Reliable Broadcast. 
+     */
     #[async_recursion::async_recursion]
     pub async fn process_echo(&mut self, main_msg:Msg, echo_sender:Replica){
         let rbc_originator = main_msg.origin;

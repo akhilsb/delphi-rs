@@ -3,8 +3,13 @@ use std::collections::HashSet;
 use types::{Replica, appxcon::{ProtMsg, Msg}};
 
 use super::Context;
-
+/**
+ * This file implements Bracha's Reliable Broadcast (RBC) protocol. 
+ */
 impl Context {
+    /**
+     * Start RBC block. 
+     */
     pub async fn start_rbc(&mut self,msg:Msg){
         // Broadcast message
         log::info!("Started RBC by broadcasting message {:?}",msg);

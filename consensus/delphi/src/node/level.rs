@@ -10,7 +10,11 @@ pub struct Level{
     pub intervals: BTreeMap<Point,Interval>,
     pub sep: Val
 }
-
+/**
+ * The Level object contains a list of all intervals (and checkpoints) from i64::MIN to i64::MAX. 
+ * Checkpoints within this level are spaced by sep. 
+ * A level is initiated with the node's value v_i. We create three intervals from MIN to v_1-\sep, v_1-\sep to v_1+\sep, v_1 + sep to MAX. 
+ */
 impl Level{
     pub fn new(sep:Val, num:Lev, val: Val, minth: usize, highth:usize)-> Self{
         // Find nearest multiple of sep to val.
@@ -45,7 +49,13 @@ impl Level{
         terminated
     }
 
+    /**
+     * This method handles ECHO1 messages for multiple checkpoints within the level. 
+     */
     pub fn add_echo(&mut self, interval_vals:Vec<(Point,Point,Val)>, round:Round, echo_sender:Replica)->(Vec<(Point,Point,Val)>,Vec<(Point,Point,Val)>){
+        // Interval vals is a vector of (p1,p2,Val), which indicates an ECHO1 for value Val for all checkpoints between starting point p1 and ending point p2. 
+        
+        // List of echo1 messages and echo2 messages to send to broadcast. 
         let mut echo1msgs:Vec<(Point,Point,Val)> = Vec::new();
         let mut echo2msgs:Vec<(Point,Point,Val)> = Vec::new();
         for (start,end,value) in interval_vals.into_iter(){
@@ -123,7 +133,11 @@ impl Level{
         (echo1msgs,echo2msgs)
     }
 
+     /**
+     * This method handles ECHO2 messages for multiple checkpoints within the level. 
+     */
     pub fn add_echo2(&mut self, interval_vals:Vec<(Point,Point,Val)>, round:Round, echo_sender:Replica){
+        // Interval vals is a vector of (p1,p2,Val), which indicates an ECHO2 for value Val for all checkpoints between starting point p1 and ending point p2. 
         for (start,end,value) in interval_vals.into_iter(){
             let mut new_interval_map = BTreeMap::new();
             for (_interval_start,interval) in self.intervals.iter(){
@@ -164,7 +178,11 @@ impl Level{
             }
         }
     }
-
+    /**
+     * Compress message compresses messages from multiple intervals into a single message (in case such a compression is possible).
+     * Say there are two messages (start1,end1,V1) and (end1,end2,V1). This routine creates a single message (start1,end2,V1). 
+     * This operation saves network bandwidth by reducing redundant information sent. 
+     */
     pub fn compress(mut interval_vals:Vec<(Point,Point,Val)>, lev:Lev)->Vec<(Point,Point,Val)>{
         if interval_vals.len() > 1{
             let num = interval_vals.len();
@@ -182,7 +200,9 @@ impl Level{
             interval_vals
         }
     }
-
+    /**
+     * Starts new round. 
+     */
     pub fn start_round(&mut self, round:Round, myid:Replica,val:Val, max_val:Val)->Vec<(Point,Point,Val)>{
         let mut echo_vec:Vec<(Point,Point,Val)> = Vec::new();
         if (round>0 && self.terminated_round(round-1))||round == 0{

@@ -5,6 +5,12 @@ use types::{Replica, appxcon::{ProtMsg}, Round, Val, SyncState, SyncMsg};
 
 use crate::node::{Context, RoundStateBin};
 
+/**
+ * We use Abraham, Ben-David, and Yandamuri's Binary Byzantine Agreement protocol as the BBA protocol in FIN. 
+ * FIN uses a RABA protocol with a higher round complexity. We replace this RABA protocol with Gather and Abraham, Ben-David, and Yandamuri's BBA protocol to achieve BBA within 5 rounds in the best case.
+ * Overall, this protocol has a lesser round complexity than FIN and essentially terminates faster because of Gather's higher probability of encountering a stable proposal.  
+ * Refer to both protocols for a detailed protocol description. 
+ */
 impl Context{
     #[async_recursion::async_recursion]
     pub async fn process_baa_echo(self: &mut Context, msg:Val, echo_sender:Replica, leader_round:Round,baa_round:Round){

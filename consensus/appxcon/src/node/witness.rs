@@ -5,6 +5,9 @@ use crate::node::{RoundState};
 use super::Context;
 
 impl Context{
+    /**
+     * Handles a Witness message from another node. Check Abraham et al.'s protocol for further details. 
+     */
     pub async fn handle_witness(&mut self,vec_rbc_indices:Vec<Replica>, round: u64, witness_sender:Replica){
         let round_state_map = &mut self.round_state;
         log::info!("Received witness message {:?} from node {} for round {}",vec_rbc_indices.clone(),witness_sender,round);
