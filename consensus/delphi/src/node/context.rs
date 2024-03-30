@@ -187,7 +187,6 @@ impl Context {
                 },
                 msg = self.net_recv.recv() => {
                     // Received a protocol message
-                    // Received a protocol message
                     log::debug!("Got a consensus message from the network: {:?}", msg);
                     let msg = msg.ok_or_else(||
                         anyhow!("Networking layer has closed")

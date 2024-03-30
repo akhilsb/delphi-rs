@@ -79,7 +79,10 @@ $ ./scripts/abraham-test.sh 2 2 20 testdata/hyb_4/syncer
 ```
 
 ## Running in AWS
-We utilize the code in the [Narwhal](https://github.com/MystenLabs/sui/tree/main/narwhal/benchmark) repository to execute code in AWS. This repository uses `fabric` to spawn AWS instances, install Rust, and build the repository on individual machines. Please refer to the `benchmark` directory for more instructions. 
+We utilize the code in the [Narwhal](https://github.com/MystenLabs/sui/tree/main/narwhal/benchmark) repository to execute code in AWS. This repository uses `fabric` to spawn AWS instances, install Rust, and build the repository on individual machines. Please refer to the `benchmark` directory for more instructions about reproducing the results in the paper. 
+
+## Running in Raspberry-Pi testbed
+We described detailed instructions to reproduce the results in the paper in the Raspberry-Pi device testbed in the `benchmark/raspberry-pi` directory. 
 
 # System architecture
 Each node runs as an independent process, which communicates with other nodes through sockets. Apart from the $n$ nodes running the protocol, the system also spawns a process called `syncer`. The `syncer` is responsible for measuring latency of completion. It reliably measures the system's latency by issuing `START` and `STOP` commands to all nodes. The nodes begin executing the protocol only after the `syncer` verifies that all nodes are online, and issues the `START` command by sending a message to all nodes. Further, the nodes send a `TERMINATED` message to the `syncer` once they terminate the protocol. The `syncer` records both start and termination times of all processes, which allows it to accurately measure the latency of each protocol. 
