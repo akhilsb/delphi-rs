@@ -3,34 +3,14 @@ Forked from (Narwhal) [https://github.com/asonnino/narwhal].
 
 This document explains how to benchmark the codebase and read benchmarks' results. It also provides a step-by-step tutorial to run benchmarks on [Amazon Web Services (AWS)](https://aws.amazon.com) accross multiple data centers (WAN).
 
-## Local Benchmarks
-When running benchmarks, the codebase is automatically compiled with the feature flag `benchmark`. This enables the node to print some special log entries that are then read by the python scripts and used to compute performance. These special log entries are clearly indicated with comments in the code: make sure to not alter them (otherwise the benchmark scripts will fail to interpret the logs).
+## Setup
+The core protocols are written in Rust, but all benchmarking scripts are written in Python and run with [Fabric](http://www.fabfile.org/). To run the remote benchmark, install the python dependencies:
 
-### Parametrize the benchmark
-After cloning the repo and [installing all dependencies](https://github.com/asonnino/narwhal#quick-start), you can use [Fabric](http://www.fabfile.org/) to run benchmarks on your local machine.  Locate the task called `local` in the file [fabfile.py](https://github.com/asonnino/narwhal/blob/master/benchmark/fabfile.py):
-```python
-@task
-def local(ctx):
-    ...
 ```
-The task specifies two types of parameters, the *benchmark parameters* and the *nodes parameters*. The benchmark parameters look as follows:
-```python
-bench_params = {
-    'nodes': 4,
-    'workers': 1,
-    'rate': 50_000,
-    'tx_size': 512,
-    'faults': 0,
-    'duration': 20,
-}
+$ pip install -r requirements.txt
 ```
 
-### Run the benchmark
-Once you specified both `bench_params` and `node_params` as desired, run:
-```
-$ fab local
-```
-This command first recompiles your code in `release` mode (and with the `benchmark` feature flag activated), thus ensuring you always benchmark the latest version of your code. This may take a long time the first time you run it. It then generates the configuration files and keys for each node, and runs the benchmarks with the specified parameters. 
+You also need to install [tmux](https://linuxize.com/post/getting-started-with-tmux/#installing-tmux) (which runs all nodes and clients in the background). 
 
 ## AWS Benchmarks
 This repo integrates various python scripts to deploy and benchmark the codebase on [Amazon Web Services (AWS)](https://aws.amazon.com). They are particularly useful to run benchmarks in the WAN, across multiple data centers. This section provides a step-by-step tutorial explaining how to use them.
@@ -59,7 +39,9 @@ The file [settings.json](https://github.com/asonnino/narwhal/blob/master/benchma
         "name": "aws",
         "path": "/absolute/key/path"
     },
-    "port": 5000,
+    "port": 8500,
+    "client_base_port": 9000,
+    "client_run_port": 9500,
     "repo": {
         "name": "delphi-rs",
         "url": "https://github.com/akhilsb/delphi-rs.git",
@@ -67,7 +49,7 @@ The file [settings.json](https://github.com/asonnino/narwhal/blob/master/benchma
     },
     "instances": {
         "type": "t2.micro",
-        "regions": ["us-east-1", "eu-north-1", "ap-southeast-2", "us-west-1", "ap-northeast-1"]
+        "regions": ["us-east-1","us-east-2","us-west-1","us-west-2","ca-central-1", "eu-west-1", "ap-southeast-1", "ap-northeast-1"]
     }
 }
 ```
@@ -83,15 +65,17 @@ Enter the name of your SSH key; this is the name you specified in the AWS web co
 
 The second block (`ports`) specifies the TCP ports to use:
 ```json
-"port": 5000,
+"port": 8500,
+"client_base_port": 9000,
+"client_run_port": 9500,
 ```
-Narwhal requires a number of TCP ports, depening on the number of workers per node, Each primary requires 2 ports (one to receive messages from other primaties and one to receive messages from its workers), and each worker requires 3 ports (one to receive client transactions, one to receive messages from its primary, and one to receive messages from other workers). Note that the script will open a large port range (5000-9000) to the WAN on all your AWS instances. 
+The artifact requires a number of TCP ports for communication between the processes. Note that the script will open a large port range (5000-10000) to the WAN on all your AWS instances. 
 
 The third block (`repo`) contains the information regarding the repository's name, the URL of the repo, and the branch containing the code to deploy: 
 ```json
 "repo": {
-    "name": "narwhal",
-    "url": "https://github.com/asonnino/narwhal.git",
+    "name": "delphi-rs",
+    "url": "https://github.com/akhilsb/delphi-rs.git",
     "branch": "master"
 },
 ```
@@ -101,7 +85,7 @@ The the last block (`instances`) specifies the [AWS instance type](https://aws.a
 ```json
 "instances": {
     "type": "t2.micro",
-    "regions": ["us-east-1", "eu-north-1", "ap-southeast-2", "us-west-1", "ap-northeast-1"]
+    "regions": ["us-east-1","us-east-2","us-west-1","us-west-2","ca-central-1", "eu-west-1", "ap-southeast-1", "ap-northeast-1"]
 }
 ```
 The instance type selects the hardware on which to deploy the testbed. For example, `t2.micro` instances come with 1 vCPU (1 physical core), and 1 GB of RAM. The python scripts will configure each instance with 300 GB of SSD hard drive. The `regions` field specifies the data centers to use. If you require more nodes than data centers, the python scripts will distribute the nodes as equally as possible amongst the data centers. All machines run a fresh install of Ubuntu Server 20.04.
@@ -156,8 +140,31 @@ $ fab logs
 ```
 The `syncer.log` file contains the details about the latency of the protocol and the outputs of the nodes. Note that this log file needs to be downloaded only after allowing the protocol sufficient time to terminate (Ideally within 5 minutes). If anything goes wrong during a benchmark, you can always stop it by running `fab kill`.
 
-## Running FIN
-The FIN protocol requires the presence of a file with the name `tkeys.tar.gz`, which is a compressed file containing the BLS public key as `pub`, partial secret key shares as `sec0,...,sec{n-1}`, and corresponding public keys as `pub0,...,pubn-1`. This repository contains these keys for values of `n=16,64,112,160`. 
+Be sure to kill the prior benchmark using the following command before running a new benchmark. 
+```
+$ fab kill
+```
+
+## Running FIN and Abraham et al.
+The `run_primary` function in the `commands.py` file specifies which protocol to run. Currently, the function runs the `Delphi` protocol denoted by the keyword `del`, passed to the program using the `--vsstype` functionality. Change this `del` keyword to `fin` and `hyb` to run FIN and Abraham et al., respectively. 
+
+In addition to the previous changes, the FIN protocol requires the presence of a file with the name `tkeys.tar.gz`, which is a compressed file containing the BLS public key as `pub`, partial secret key shares as `sec0,...,sec{n-1}`, and corresponding public keys as `pub0,...,pubn-1`. This repository contains these keys for values of `n=16,64,112,160`. Before running FIN, run the following command to copy the BLS keys for the code to access. 
+```
+$ cp tkeys-{n}.tar.gz tkeys.tar.gz
+```
+After making these changes, retrace the procedure from Step 5 to run the protocols. 
 
 # Reproducing results in the paper
-We ran Delphi at configuration of $\epsilon=2, \delta=20, \Delta = 2000$, and $\rho_0 =2$ in the Bitcoin usecase at $n=16,64,112,160$ nodes in a geo-distributed testbed of `t2.micro` nodes spread across 8 regions:  N. Virginia, Ohio, N. California, Oregon, Canada, Ireland, Singapore, and Tokyo. We also ran Delphi at a configuration of \epsilon=2, \delta=180, \Delta = 2000,\rho_0=2$ to demonstrate the performance at a high $\delta$. We ran FIN with the same configuration. However, FIN's runtime is independent of the inputs and input parameters. We ran Abraham et al. with $\epsilon=2, \delta=2, \Delta = 20$. Notice that $\delta$ in Delphi is different than Abraham et al. In Abraham et al., $\Delta$ is the real difference between honest inputs (It is the maximum difference in Delphi). 
+We ran Delphi at configuration of $\epsilon=2,\rho_0 =2, \delta=20, \Delta = 2000$ (set on line 250 in the file `remote.py`) in the Bitcoin usecase at $n=16,64,112,160$ nodes in a geo-distributed testbed of `t2.micro` nodes spread across 8 regions:  N. Virginia, Ohio, N. California, Oregon, Canada, Ireland, Singapore, and Tokyo (These values are pre-configured in the `settings.json` file). We also ran Delphi at a configuration of $\epsilon=2, \rho_0=2, \delta=180, \Delta = 2000$ (need to be changed on line 250 in the file `remote.py`) to demonstrate the performance at a high difference $\delta$. 
+
+We ran FIN with the same configuration. However, FIN's runtime is independent of the inputs and input parameters. Remember to change the protocol to run by modifying `commands.py` file on Line 38 (change `del` to `fin`) before running the benchmark. 
+
+We ran Abraham et al. with $\epsilon=2, \rho_0 = 20, \delta=20, \Delta = 20$ (change these parameters on line 250 in the file `remote.py`). Notice that $\delta$ in Delphi is different than Abraham et al. In Abraham et al., $\Delta$ is the real difference between honest inputs (It is the maximum difference in Delphi). 
+
+In summary, perform the following steps before running a protocol on a given set of values. 
+
+1. Change the `remote.py` file on line 250. Set the number of nodes $n$, $\epsilon$ (variable name epsilon), $\rho_0$ (variable name rho_0), $\delta$ (variable name delta), and $\Delta$ (variable name Delta). 
+2. Change the `commands.py` file on line 38. Pass the parameter `del`, `fin`, `hyb` into the `--vsstype` parameter for running Delphi, FIN, and Abraham et al., respectively. 
+3. (For running FIN) Paste the `tkeys.tar.gz` file as specified in line 153 of this README.md file. 
+4. Run `fab kill` to kill any previous benchmark. 
+5. Retrace the procedure from Step 5 to execute the benchmark. 

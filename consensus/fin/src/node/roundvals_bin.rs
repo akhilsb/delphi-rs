@@ -6,6 +6,7 @@ use types::{appxcon::{Replica}, Val};
 /**
  * Each round of [ABY'22]'s binary BA protocol. 
  * This protocol consists of ECHO1, ECHO2, and ECHO3 messages. 
+ * It terminates in 3 round trips in the best case. 
  */
 #[derive(Debug,Clone)]
 pub struct RoundStateBin{

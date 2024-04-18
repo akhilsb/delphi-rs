@@ -247,11 +247,13 @@ class Bench:
             #c.put(PathMaker.parameters_file(), '.')
         Print.info('Booting primaries...')
         st_time = round(time.time() * 1000) + 60000
-        ep = 1
-        delta = 50
-        exp_vals = self.exp_setup(160)
+        n = 160
+        epsilon = 2
+        rho_0 = 2
+        delta = 20
+        Delta = 2000
+        exp_vals = self.exp_setup(n,delta)
         import numpy as np
-        tri = 200
         import random
         rand = random.randint(1000000,15000000)
         for i,ip in enumerate(hosts):
@@ -269,10 +271,10 @@ class Bench:
             cmd = CommandMaker.run_primary(
                 PathMaker.key_file(i),
                 st_time,
-                ep,
-                delta,
+                epsilon,
+                rho_0,
                 exp_vals[i],
-                tri,
+                Delta,
                 100,
                 rand,
                 debug=False
@@ -285,10 +287,10 @@ class Bench:
             self._background_run(ip, cmd, log_file)
         return committee
 
-    def exp_setup(self,n):
+    def exp_setup(self,n,delta):
         import numpy as np
         #values = np.random.normal(loc=2300,scale=50,size=n)
-        values = np.linspace(2200,2380,num=n)
+        values = np.linspace(2200,2200+delta,num=n)
         arr_int = []
         for val in values:
             arr_int.append(int(val))
@@ -361,11 +363,13 @@ class Bench:
         #     #c.put(PathMaker.parameters_file(), '.')
         Print.info('Booting primaries...')
         st_time = round(time.time() * 1000) + 60000
-        ep = 2
-        delta = 2
-        exp_vals = self.exp_setup(160)
+        n=160
+        epsilon = 2
+        rho_0 = 2
+        delta = 20
+        exp_vals = self.exp_setup(n,delta)
         import numpy as np
-        tri = 20
+        Delta = 20
         import random
         rand = random.randint(1000000,15000000)
         for i,ip in enumerate(hosts):
@@ -384,10 +388,10 @@ class Bench:
             cmd = CommandMaker.run_primary(
                 PathMaker.key_file(i),
                 st_time,
-                ep,
-                delta,
+                epsilon,
+                rho_0,
                 exp_vals[i],
-                tri,
+                Delta,
                 100,
                 rand,
                 debug=False
