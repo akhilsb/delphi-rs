@@ -145,6 +145,13 @@ Be sure to kill the prior benchmark using the following command before running a
 $ fab kill
 ```
 
+### Running the benchmark for different numbers of nodes
+After running the benchmarks for a given number of nodes, destroy the testbed with the following command. 
+```
+$ fab destroy
+```
+This command destroys the testbed and terminates all created AWS instances.
+
 ## Running FIN and Abraham et al.
 The `run_primary` function in the `commands.py` file specifies which protocol to run. Currently, the function runs the `Delphi` protocol denoted by the keyword `del`, passed to the program using the `--vsstype` functionality. Change this `del` keyword to `fin` and `hyb` to run FIN and Abraham et al., respectively. 
 
@@ -163,8 +170,12 @@ We ran Abraham et al. with $\epsilon=2, \rho_0 = 20, \delta=20, \Delta = 20$ (ch
 
 In summary, perform the following steps before running a protocol on a given set of values. 
 
-1. Change the `remote.py` file on line 250. Set the number of nodes $n$, $\epsilon$ (variable name epsilon), $\rho_0$ (variable name rho_0), $\delta$ (variable name delta), and $\Delta$ (variable name Delta). 
-2. Change the `commands.py` file on line 38. Pass the parameter `del`, `fin`, `hyb` into the `--vsstype` parameter for running Delphi, FIN, and Abraham et al., respectively. 
-3. (For running FIN) Paste the `tkeys.tar.gz` file as specified in line 153 of this README.md file. 
-4. Run `fab kill` to kill any previous benchmark. 
-5. Retrace the procedure from Step 5 to execute the benchmark. 
+1. Follow steps 1 through 4 to create a testbed of $n=16$ nodes. In step 4, set `nodes=2` in the `create` function to create a testbed of 16 nodes on AWS. 
+2. Change the `remote.py` file on line 250. Set the number of nodes $n$, $\epsilon$ (variable name epsilon), $\rho_0$ (variable name rho_0), $\delta$ (variable name delta), and $\Delta$ (variable name Delta). 
+3. Change the `commands.py` file on line 38. Pass the parameter `del`, `fin`, `hyb` into the `--vsstype` parameter for running Delphi, FIN, and Abraham et al., respectively. 
+4. (For running FIN) Paste the `tkeys.tar.gz` file as specified in line 153 of this README.md file. 
+5. Run the benchmark from Step 5. Wait for 5 minutes and download the log file using the command `fab logs`. 
+6. Run `fab kill` to kill any previous benchmark. 
+7. Retrace this summary procedure from bullet point 2 to run a different benchmark on the same testbed. 
+8. After running all benchmarks at this $n$ value, run `fab destroy` to terminate all instances.  
+9. Retrace this summary procedure from bullet point 1 to run a benchmark on a testbed with different number of nodes. To reproduce the results from the paper, run the benchmarks on $n=16,64,112,160$ nodes. The `nodes` parameter in the `create` function must be set to `2,8,14,20` to create testbeds of these sizes in a geo-distributed manner. 
