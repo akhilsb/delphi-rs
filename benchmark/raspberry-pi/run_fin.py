@@ -5,9 +5,11 @@ import math
 import time
 import subprocess
 import random
+import sys
 # Define the parameters for the devices
-num_proc = [12]
-print(num_proc)
+num_proc = [3,6,9,12]
+password = sys.argv[1]
+#print(num_proc)
 for x in num_proc:
 	ip_prefix = '10.42.0.'
 	start_num = 0
@@ -21,7 +23,7 @@ for x in num_proc:
 	start_val = 1000000
 
 	# Create a list of devices with IP addresses and ports
-	devices = [{'ip': f'{ip_prefix}{i+ip_start}', 'username': f'pi', 'password': f'', 'working_directory': f'/home/pi/delphi', 'app_port':run_port+i,'cli_port':syncer_run_port,'syncer_port':port_to_receive_from_syncer+i} for i in range(start_num, start_num + num_devices)]
+	devices = [{'ip': f'{ip_prefix}{i+ip_start}', 'username': f'pi', 'password': str(password), 'working_directory': f'/home/pi/delphi-rs', 'app_port':run_port+i,'cli_port':syncer_run_port,'syncer_port':port_to_receive_from_syncer+i} for i in range(start_num, start_num + num_devices)]
 	
 	# Transmit all public keys and also individual private keys
 	# Generate a list of all IP addresses with ports
@@ -90,12 +92,14 @@ for x in num_proc:
 	command_template = 'ln -sf node runnode '
 	run_command = 'nohup ./runnode --config nodes-{ind}.json --ip ip_file --sleep 100 --epsilon {ep} --delta {del} --val {val} --tri {tri} --vsstype fin --syncer syncer --batch 100 --rand {rand} --expo 2 > /dev/null '
 	unzip_and_copy = 'tar -xvf tkeys.tar.gz --touch && cp thresh_keys/* .'
+	copy_tar = f'cp tkeys-{total_processes}.tar.gz tkeys.tar.gz'
+	subprocess.run(copy_tar,shell=True)
 	iterate_rand = 198789
 	for arr in cross_p:
 		latency_arr = []
 		num_processes = (num_devices - 1)*x + 1
 		for iterate in range(iterations):
-			print("Running system for the following configuration of ep,del: ",arr)
+			#print("Running system for the following configuration of ep,del: ",arr)
 			ind = 0
 			# Transfer the IP file, syncer_file, and the nodes config file to each device
 			total_processes = 0
@@ -132,7 +136,7 @@ for x in num_proc:
 				# Close the SSH connection
 				client.close()
 				ind +=1
-			print(f"Transferred config files to {total_processes} processes in {num_devices} devices")
+			#print(f"Transferred config files to {total_processes} processes in {num_devices} devices")
 			# Command to run on devices
 			ind = 0
 			epsilon = arr[0]
@@ -173,7 +177,7 @@ for x in num_proc:
 					command_syncer = re.sub('/dev/null','syncer.log',command_syncer)
 					command_syncer = fin_command_template + ' && ' + command_syncer
 					command_syncer  = command_syncer + ' 2>&1 & '
-					print(command_syncer)
+					#print(command_syncer)
 					# UNCOMMENT BEFORE RUNNING
 					subprocess.run(command_syncer,shell=True)
 					#stdin,stdout,stderr = client.exec_command(command_syncer)
@@ -192,7 +196,7 @@ for x in num_proc:
 					num_each_device = each_device
 				# Create an SSH client object, Unzip tar file
 				unzip_cmd = 'cd ' + device['working_directory'] + ' && ' +unzip_and_copy
-				print(unzip_cmd)
+				#print(unzip_cmd)
 				client = paramiko.SSHClient()
 				# Automatically add the server key
 				client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -200,14 +204,14 @@ for x in num_proc:
 				client.connect(hostname=device['ip'], port=22, username=device['username'], password=device['password'])
 				stdin, stdout, stderr = client.exec_command(unzip_cmd)
 				err = stderr.readlines()
-				print(err)
+				#print(err)
 				client.close()
 				for proc in range(num_each_device):
 					command_iter = re.sub('{ind}',str(total_processes),command)
 					command_iter = re.sub('{val}',str(values_arr[total_processes]),command_iter)
 					fin_command = fin_command_template + '&& ' + command_iter
 					fin_command  = fin_command + ' 2>&1 & '
-					print(fin_command)
+					#print(fin_command)
 					if ind == 0:
 						subprocess.run(fin_command,shell=True)
 					else:
@@ -249,7 +253,7 @@ for x in num_proc:
 				if ind == 0:
 					ports_0_ws = kill_ports_arr[ind] + f",{device['cli_port']}"
 					kill_command = re.sub('{port}',ports_0_ws,kill_template)
-					print(kill_command)
+					#print(kill_command)
 					# UNCOMMENT THIS LINE
 					subprocess.run(kill_command,shell=True)
 				else:
@@ -260,16 +264,16 @@ for x in num_proc:
 					client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 					# Connect to the device
 					client.connect(hostname=device['ip'], port=22, username=device['username'], password=device['password'])
-					print(kill_command)
+					#print(kill_command)
 					# UNCOMMENT THIS LINE
 					stdin,stdout,stderr = client.exec_command(kill_command)
 					stdin.close()
-					print(stderr.read().decode())
+					#print(stderr.read().decode())
 					client.close()
 				ind += 1
 			iterate_rand +=1
 		latencies.append(latency_arr)
-	print(cross_p)
+	#print(cross_p)
 	print(latencies)
 	import csv
 	with open(f"latencies_n_{x}_fin.txt","a") as f:

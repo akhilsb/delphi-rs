@@ -4,9 +4,10 @@ import numpy as np
 import math
 import time
 import subprocess
+import sys
 # Define the parameters for the devices
-num_proc = [12]
-print(num_proc)
+num_proc = [3,6,9,12]
+password = sys.argv[1]
 for x in num_proc:
 	ip_prefix = '10.42.0.'
 	start_num = 0
@@ -20,7 +21,7 @@ for x in num_proc:
 	start_val = 1000000
 
 	# Create a list of devices with IP addresses and ports
-	devices = [{'ip': f'{ip_prefix}{i+ip_start}', 'username': f'pi', 'password': f'', 'working_directory': f'/home/pi/delphi', 'app_port':run_port+i,'cli_port':syncer_run_port,'syncer_port':port_to_receive_from_syncer+i} for i in range(start_num, start_num + num_devices)]
+	devices = [{'ip': f'{ip_prefix}{i+ip_start}', 'username': f'pi', 'password': str(password), 'working_directory': f'/home/pi/delphi-rs', 'app_port':run_port+i,'cli_port':syncer_run_port,'syncer_port':port_to_receive_from_syncer+i} for i in range(start_num, start_num + num_devices)]
 
 	# Generate a list of all IP addresses with ports
 	ind = 0
@@ -91,7 +92,7 @@ for x in num_proc:
 		latency_arr = []
 		num_processes = (num_devices - 1)*x + 1
 		for iterate in range(iterations):
-			print("Running system for the following configuration of ep,del: ",arr)
+			#print("Running for ep,del: ",arr)
 			ind = 0
 			# Transfer the IP file, syncer_file, and the nodes config file to each device
 			total_processes = 0
@@ -127,7 +128,7 @@ for x in num_proc:
 				# Close the SSH connection
 				client.close()
 				ind +=1
-			print(f"Transferred config files to {total_processes} processes in {num_devices} devices")
+			#print(f"Transferred config files to {total_processes} processes in {num_devices} devices")
 			# Command to run on devices
 			ind = 0
 			epsilon = arr[0]
@@ -167,7 +168,7 @@ for x in num_proc:
 					command_syncer = re.sub('/dev/null','syncer.log',command_syncer)
 					command_syncer = fin_command_template + ' && ' + command_syncer
 					command_syncer  = command_syncer + ' 2>&1 & '
-					print(command_syncer)
+					#print(command_syncer)
 					# UNCOMMENT BEFORE RUNNING
 					subprocess.run(command_syncer,shell=True)
 					#stdin,stdout,stderr = client.exec_command(command_syncer)
@@ -189,7 +190,7 @@ for x in num_proc:
 					command_iter = re.sub('{val}',str(values_arr[total_processes]),command_iter)
 					fin_command = fin_command_template + '&& ' + command_iter
 					fin_command  = fin_command + ' 2>&1 & '
-					print(fin_command)
+					#print(fin_command)
 					if ind == 0:
 						subprocess.run(fin_command,shell=True)
 					else:
@@ -231,7 +232,7 @@ for x in num_proc:
 				if ind == 0:
 					ports_0_ws = kill_ports_arr[ind] + f",{device['cli_port']}"
 					kill_command = re.sub('{port}',ports_0_ws,kill_template)
-					print(kill_command)
+					#print(kill_command)
 					# UNCOMMENT THIS LINE
 					subprocess.run(kill_command,shell=True)
 				else:
@@ -242,11 +243,11 @@ for x in num_proc:
 					client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 					# Connect to the device
 					client.connect(hostname=device['ip'], port=22, username=device['username'], password=device['password'])
-					print(kill_command)
+					#print(kill_command)
 					# UNCOMMENT THIS LINE
 					stdin,stdout,stderr = client.exec_command(kill_command)
 					stdin.close()
-					print(stderr.read().decode())
+					#print(stderr.read().decode())
 					client.close()
 				ind += 1
 		latencies.append(latency_arr)

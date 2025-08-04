@@ -4,24 +4,30 @@ import numpy as np
 import math
 import time
 import subprocess
+import sys
 # Define the parameters for the devices
-num_proc = [12]
-print(num_proc)
-for x in num_proc:
-	ip_prefix = '10.42.0.'
-	start_num = 0
-	num_devices = 15
-	each_device = x
-	num_processes = (num_devices-1)*each_device + 1
+num_proc = [3,6,9,12]
+total_processes = [43,85,127,169]
+password = sys.argv[1]
+for processes in total_processes:
+	processes_to_be_distributed = processes-1
+	ip_addresses = ['10.42.0.231', '10.42.0.232', '10.42.0.233', '10.42.0.234', '10.42.0.235','10.42.0.237','10.42.0.238','10.42.0.239','10.42.0.240','10.42.0.241','10.42.0.242','10.42.0.243','10.42.0.244','10.42.0.245']
+	each_device_processes = [1,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	distribute = processes-1
+	for i in range(0,distribute):
+		each_device_processes[i%(len(ip_addresses)-1)+1] +=1
 	run_port = 8500
 	syncer_run_port = 5000
 	port_receiving_from_syncer = 7000
 	ip_start = 231
 	start_val = 1000000
-
+	username = f'pi'
+	password = f'dcsl_1234'
+	working_directory = f'/home/pi/delphi-rs'
+	# app_port = Need to be changed
+	# cli_port = Unchanged, fixed value
+	# syncer_port = port_receiving_from_syncer, increment each process
 	# Create a list of devices with IP addresses and ports
-	devices = [{'ip': f'{ip_prefix}{i+ip_start}', 'username': f'pi', 'password': f'', 'working_directory': f'/home/pi/delphi', 'app_port':run_port+i,'cli_port':syncer_run_port,'syncer_port':port_receiving_from_syncer+i} for i in range(start_num, start_num + num_devices)]
-
 	# Generate a list of all IP addresses with ports
 	ind = 0
 	total_processes = 0
@@ -30,15 +36,14 @@ for x in num_proc:
 	port_r = run_port
 	port_s = port_receiving_from_syncer
 	kill_ports_arr = []
-	for device in devices:
-		if ind == 2:
-			num_each_device = 1
-		else:
-			num_each_device = each_device
+	zipped_device_processes = list(zip(ip_addresses,each_device_processes))
+	for device in zipped_device_processes:
+		device_ip = device[0]
+		num_processes_in_device = device[1]
 		kill_ports = f"{port_r},{port_s}"
-		for proc in range(num_each_device):
-			ip_proc = f"{device['ip']}:{port_r}"
-			ip_sync_proc = f"{device['ip']}:{port_s}"
+		for proc in range(num_processes_in_device):
+			ip_proc = f"{device_ip}:{port_r}"
+			ip_sync_proc = f"{device_ip}:{port_s}"
 			ip_list.append(ip_proc)
 			syncer_list.append(ip_sync_proc)
 			port_r +=1
@@ -89,19 +94,14 @@ for x in num_proc:
 	run_command = 'nohup ./runnode --config nodes-{ind}.json --ip ip_file --sleep 100 --epsilon {ep} --delta {del} --val {val} --tri {tri} --vsstype del --syncer syncer --batch 100 --rand 10000 --expo 2 > /dev/null '
 	for arr in cross_p:
 		latency_arr = []
-		num_processes = (num_devices - 1)*x + 1
+		num_processes = processes
 		for iterate in range(iterations):
-			print("Running system for the following configuration of ep,del: ",arr)
 			ind = 0
-			# Transfer the IP file, syncer_file, and the nodes config file to each device
 			total_processes = 0
-			for device in devices:
+			for device in zipped_device_processes:
 				# how many processes to run on each device?
-				if ind == 2:
-					# Run only one process on device measuring energy
-					num_each_device = 1
-				else:
-					num_each_device = each_device
+				num_each_device = device[1]
+				device_ip = device[0]
 				if ind == 0:
 					# Transfer files by number
 					for proc in range(num_each_device):
@@ -115,19 +115,19 @@ for x in num_proc:
 				# Automatically add the server key
 				client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 				# Connect to the device
-				client.connect(hostname=device['ip'], port=22, username=device['username'], password=device['password'])
+				client.connect(hostname=device_ip, port=22, username=username, password=password)
 				# Transfer the IP file to the device
 				sftp = client.open_sftp()
-				sftp.put('ip_file', f"{device['working_directory']}/ip_file")
-				sftp.put('syncer',f"{device['working_directory']}/syncer")
+				sftp.put('ip_file', f"{working_directory}/ip_file")
+				sftp.put('syncer',f"{working_directory}/syncer")
 				for proc in range(num_each_device):
-					sftp.put(f"{num_processes}/nodes-{total_processes}.json",f"{device['working_directory']}/nodes-{total_processes}.json")
+					sftp.put(f"{num_processes}/nodes-{total_processes}.json",f"{working_directory}/nodes-{total_processes}.json")
 					total_processes += 1
 				sftp.close()
 				# Close the SSH connection
 				client.close()
 				ind +=1
-			print(f"Transferred config files to {total_processes} processes in {num_devices} devices")
+			print(f"Transferred config files to {total_processes} processes in {len(ip_addresses)} devices")
 			# Command to run on devices
 			ind = 0
 			epsilon = arr[0]
@@ -146,15 +146,16 @@ for x in num_proc:
 			syncer = 0
 			total_processes = 0
 			# Loop through the devices and execute the command
-			while ind < len(devices):
-				device = devices[ind]
+			for device in zipped_device_processes:
 				# Modify the command string using regex to replace placeholders with device-specific information
+				device_ip = device[0]
+				num_each_device = device[1]
 				command = re.sub('{ep}',str(epsilon),run_command)
 				command = re.sub('{del}',str(rho),command)
 				command = re.sub('{tri}',str(Delta),command)
 				# add a command for syncer too
 				# Add the working directory to the command string
-				fin_command_template = 'cd ' + device['working_directory'] + ' && ' + command_template
+				fin_command_template = 'cd ' + working_directory + ' && ' + command_template
 				if syncer == 0:
 					# Kill syncer first
 					#kill_syncer = re.sub('{port}',str(cli_port),kill_template)
@@ -167,7 +168,7 @@ for x in num_proc:
 					command_syncer = re.sub('/dev/null','syncer.log',command_syncer)
 					command_syncer = fin_command_template + ' && ' + command_syncer
 					command_syncer  = command_syncer + ' 2>&1 & '
-					print(command_syncer)
+					#print(command_syncer)
 					# UNCOMMENT BEFORE RUNNING
 					subprocess.run(command_syncer,shell=True)
 					#stdin,stdout,stderr = client.exec_command(command_syncer)
@@ -176,20 +177,13 @@ for x in num_proc:
 					#print("Syncer logs: stdout: "+ stdout.read().decode()+"\n stderr: "+ stderr.read().decode())
 					#client.close()
 					syncer = 1
-					continue
-				# Execute the modified command on the device
-				# how many processes to run on each device?
-				if ind == 2:
-					# Run only one process on device measuring energy
-					num_each_device = 1
-				else:
-					num_each_device = each_device
+				num_each_device = device[1]
 				for proc in range(num_each_device):
 					command_iter = re.sub('{ind}',str(total_processes),command)
 					command_iter = re.sub('{val}',str(values_arr[total_processes]),command_iter)
 					fin_command = fin_command_template + '&& ' + command_iter
 					fin_command  = fin_command + ' 2>&1 & '
-					print(fin_command)
+					print(total_processes,device_ip,fin_command)
 					if ind == 0:
 						subprocess.run(fin_command,shell=True)
 					else:
@@ -198,7 +192,7 @@ for x in num_proc:
 						# Automatically add the server key
 						client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 						# Connect to the device
-						client.connect(hostname=device['ip'], port=22, username=device['username'], password=device['password'])
+						client.connect(hostname=device_ip, port=22, username=username, password=password)
 						stdin, stdout, stderr = client.exec_command(fin_command)
 						client.close()
 					total_processes += 1
@@ -227,11 +221,12 @@ for x in num_proc:
 			kill_template = 'sudo lsof -ti :{port} | sudo xargs kill -9'
 			# Execute kill commands first
 			ind = 0
-			for device in devices:
+			for device in zipped_device_processes:
+				device_ip= device[0]
 				if ind == 0:
-					ports_0_ws = kill_ports_arr[ind] + f",{device['cli_port']}"
+					ports_0_ws = kill_ports_arr[ind] + f",{syncer_run_port}"
 					kill_command = re.sub('{port}',ports_0_ws,kill_template)
-					print(kill_command)
+					#print(kill_command)
 					# UNCOMMENT THIS LINE
 					subprocess.run(kill_command,shell=True)
 				else:
@@ -241,8 +236,8 @@ for x in num_proc:
 					# Automatically add the server key
 					client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 					# Connect to the device
-					client.connect(hostname=device['ip'], port=22, username=device['username'], password=device['password'])
-					print(kill_command)
+					client.connect(hostname=device_ip, port=22, username=username, password=password)
+					#print(kill_command)
 					# UNCOMMENT THIS LINE
 					stdin,stdout,stderr = client.exec_command(kill_command)
 					stdin.close()
@@ -253,6 +248,6 @@ for x in num_proc:
 	print(cross_p)
 	print(latencies)
 	import csv
-	with open(f"latencies_n_{x}_delphi.txt","a") as f:
+	with open(f"latencies_n_{processes}_delphi.txt","a") as f:
 		csv.writer(f,delimiter=' ').writerows(latencies)
 		f.close()
